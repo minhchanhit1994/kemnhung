@@ -170,7 +170,7 @@ export default function Home() {
               <div className="mx-auto w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
                 <Shield className="w-7 h-7 text-emerald-600" />
               </div>
-              <CardTitle className="text-xl">Quản trị Kẽm Nhung</CardTitle>
+              <CardTitle className="text-xl">Quản trị</CardTitle>
               <CardDescription>Đăng nhập để quản lý cửa hàng</CardDescription>
             </CardHeader>
             <CardContent>
