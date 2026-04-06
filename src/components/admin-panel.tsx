@@ -2516,8 +2516,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </div>
               </div>
 
-              {/* Actions */}
-              {selectedOrder.status === 'pending' && (
+              {/* Print Invoice - available for pending & completed orders */}
+              {(selectedOrder.status === 'pending' || selectedOrder.status === 'completed') && (
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
