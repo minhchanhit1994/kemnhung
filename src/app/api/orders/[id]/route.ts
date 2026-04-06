@@ -63,6 +63,28 @@ export async function PUT(
 
     const now = new Date().toISOString()
 
+    // Fetch current order to get its existing status
+    const { data: existingOrder, error: fetchError } = await supabase
+      .from('orders')
+      .select('status')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !existingOrder) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    const previousStatus = existingOrder.status
+
+    // Prevent invalid transitions
+    if (previousStatus === 'completed' && status !== 'completed') {
+      return NextResponse.json(
+        { error: 'Không thể thay đổi đơn hàng đã hoàn thành' },
+        { status: 400 }
+      )
+    }
+
+    // Update order status
     const { data, error } = await supabase
       .from('orders')
       .update({
@@ -75,6 +97,45 @@ export async function PUT(
 
     if (error || !data) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    // When order is completed → deduct stock from products
+    if (status === 'completed' && previousStatus !== 'completed') {
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .select('product_id, quantity')
+        .eq('order_id', id)
+
+      if (itemsError) {
+        console.error('Error fetching order items for stock deduction:', itemsError)
+      } else if (itemsData && itemsData.length > 0) {
+        // Deduct stock for each product in the order
+        for (const item of itemsData) {
+          if (!item.product_id || item.quantity <= 0) continue
+
+          const { data: product, error: productError } = await supabase
+            .from('products')
+            .select('id, stock_quantity')
+            .eq('id', item.product_id)
+            .single()
+
+          if (productError || !product) {
+            console.error(`Product ${item.product_id} not found for stock deduction`)
+            continue
+          }
+
+          const newStock = Math.max(0, (product.stock_quantity || 0) - item.quantity)
+
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ stock_quantity: newStock, updated_at: now })
+            .eq('id', item.product_id)
+
+          if (updateError) {
+            console.error(`Failed to deduct stock for product ${item.product_id}:`, updateError)
+          }
+        }
+      }
     }
 
     return NextResponse.json(toCamelCase<Order>(data))
