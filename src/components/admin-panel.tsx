@@ -68,6 +68,10 @@ import {
   Eye,
   ShoppingCart,
   Clock,
+  Settings,
+  Store,
+  MessageCircle,
+  Loader2,
 } from 'lucide-react'
 import {
   BarChart,
@@ -87,6 +91,7 @@ import type {
   ProductionOrder,
   Order,
   OrderItem,
+  ShopInfo,
 } from '@/lib/types'
 
 interface AdminPanelProps {
@@ -157,6 +162,17 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   // === Orders ===
   const [orders, setOrders] = useState<(Order & { orderItems?: OrderItem[] })[]>([])
 
+  // === Shop Info ===
+  const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null)
+  const [settingsForm, setSettingsForm] = useState({
+    shopName: 'Kẽm Nhung',
+    phone: '',
+    zalo: '',
+    address: '',
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsSaved, setSettingsSaved] = useState(false)
+
   // === UI State ===
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -211,13 +227,14 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [materialsRes, transactionsRes, productsRes, productionRes, dashboardRes, ordersRes] = await Promise.all([
+      const [materialsRes, transactionsRes, productsRes, productionRes, dashboardRes, ordersRes, shopInfoRes] = await Promise.all([
         fetch('/api/raw-materials'),
         fetch('/api/material-transactions'),
         fetch('/api/products'),
         fetch('/api/production-orders'),
         fetch('/api/dashboard'),
         fetch('/api/orders'),
+        fetch('/api/shop-info'),
       ])
       if (materialsRes.ok) setRawMaterials(await materialsRes.json())
       if (transactionsRes.ok) setMaterialTransactions(await transactionsRes.json())
@@ -225,6 +242,16 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       if (productionRes.ok) setProductionOrders(await productionRes.json())
       if (dashboardRes.ok) setStats(await dashboardRes.json())
       if (ordersRes.ok) setOrders(await ordersRes.json())
+      if (shopInfoRes.ok) {
+        const info = await shopInfoRes.json()
+        setShopInfo(info)
+        setSettingsForm({
+          shopName: info.shopName || 'Kẽm Nhung',
+          phone: info.phone || '',
+          zalo: info.zalo || '',
+          address: info.address || '',
+        })
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error)
     } finally {
@@ -742,6 +769,33 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     setOrderDetailDialogOpen(true)
   }
 
+  // === Settings ===
+  const saveSettings = async () => {
+    try {
+      setSettingsSaving(true)
+      setSettingsSaved(false)
+      const res = await fetch('/api/shop-info', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settingsForm),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setShopInfo(data)
+        setSettingsSaved(true)
+        setTimeout(() => setSettingsSaved(false), 3000)
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Lỗi lưu cài đặt')
+      }
+    } catch (error) {
+      console.error('Settings error:', error)
+      alert('Lỗi lưu cài đặt')
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
+
   // === Loading Skeleton ===
   if (loading && !stats) {
     return (
@@ -812,6 +866,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
               <ClipboardList className="w-4 h-4" />
               <span className="hidden sm:inline">Đơn hàng</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Cài đặt</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1588,8 +1646,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               </Card>
             </div>
           </TabsContent>
-        </Tabs>
-      </div>
 
       {/* ==================== DIALOGS ==================== */}
 
@@ -2350,6 +2406,127 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
           )}
         </DialogContent>
       </Dialog>
+
+          {/* ==================== Tab 5: CÀI ĐẶT ==================== */}
+          <TabsContent value="settings">
+            <div className="max-w-2xl">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Store className="w-5 h-5 text-emerald-500" />
+                    Thông tin cửa hàng
+                  </CardTitle>
+                  <CardDescription>
+                    Các thông tin này sẽ hiển thị trên trang chủ shop cho khách hàng xem
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-name" className="flex items-center gap-2">
+                      <Store className="w-4 h-4 text-gray-400" />
+                      Tên cửa hàng
+                    </Label>
+                    <Input
+                      id="shop-name"
+                      value={settingsForm.shopName}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, shopName: e.target.value })}
+                      placeholder="Kẽm Nhung"
+                      disabled={settingsSaving}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Hiển thị trên trang chủ, header và footer
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-phone" className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      Số điện thoại
+                    </Label>
+                    <Input
+                      id="shop-phone"
+                      value={settingsForm.phone}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                      placeholder="0912345678"
+                      disabled={settingsSaving}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Hiển thị ở footer. Dùng làm liên hệ Zalo nếu không có số Zalo riêng.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-zalo" className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-gray-400" />
+                      Số Zalo
+                    </Label>
+                    <Input
+                      id="shop-zalo"
+                      value={settingsForm.zalo}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, zalo: e.target.value })}
+                      placeholder="0912345678"
+                      disabled={settingsSaving}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Khách hàng click &quot;Liên hệ đặt hàng&quot; sẽ mở khung chat Zalo với số này. Nếu để trống sẽ dùng số điện thoại.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-address" className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      Địa chỉ
+                    </Label>
+                    <Input
+                      id="shop-address"
+                      value={settingsForm.address}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
+                      placeholder="Địa chỉ của bạn..."
+                      disabled={settingsSaving}
+                    />
+                  </div>
+
+                  {shopInfo && (
+                    <div className="bg-gray-50 rounded-xl p-4 border">
+                      <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider font-medium">Xem trước</p>
+                      <div className="space-y-1 text-sm">
+                        <p><span className="text-muted-foreground">Tên shop:</span> <span className="font-medium">{settingsForm.shopName || 'Kẽm Nhung'}</span></p>
+                        <p><span className="text-muted-foreground">SĐT:</span> {settingsForm.phone || '—'}</p>
+                        <p><span className="text-muted-foreground">Zalo:</span> {settingsForm.zalo || settingsForm.phone ? (
+                          <a href={`https://zalo.me/${(settingsForm.zalo || settingsForm.phone).replace(/^0/, '')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline ml-1">Mở chat Zalo</a>
+                        ) : <span className="text-amber-600 ml-1">Chưa cấu hình</span>}</p>
+                        <p><span className="text-muted-foreground">Địa chỉ:</span> {settingsForm.address || '—'}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <Button onClick={saveSettings} disabled={settingsSaving} className="bg-emerald-600 hover:bg-emerald-700">
+                      {settingsSaving ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang lưu...</>
+                      ) : (
+                        <><Save className="w-4 h-4 mr-2" /> Lưu thay đổi</>
+                      )}
+                    </Button>
+                    {settingsSaved && (
+                      <span className="flex items-center gap-1 text-emerald-600 text-sm">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Đã lưu thành công! Trang chủ sẽ cập nhật ngay.
+                      </span>
+                    )}
+                  </div>
+
+                  {shopInfo?.updatedAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Cập nhật lần cuối: {formatDate(shopInfo.updatedAt)}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }

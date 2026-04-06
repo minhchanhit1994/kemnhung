@@ -5,29 +5,55 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, ShoppingBag, Gem, Heart, Video, Play, X, Phone, MapPin } from 'lucide-react'
-import type { Product } from '@/lib/types'
+import { Search, ShoppingBag, Gem, Video, X, Phone, MessageCircle } from 'lucide-react'
+import type { Product, ShopInfo } from '@/lib/types'
 
 interface ShopHomepageProps {
   onAdminClick: () => void
 }
 
+// Default fallback when shop info hasn't loaded yet
+const DEFAULT_SHOP: ShopInfo = {
+  id: '',
+  shopName: 'Kẽm Nhung',
+  phone: '',
+  zalo: '',
+  address: '',
+  bankName: '',
+  bankAccount: '',
+  bankAccountName: '',
+  createdAt: '',
+  updatedAt: '',
+}
+
 export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   const [products, setProducts] = useState<Product[]>([])
+  const [shopInfo, setShopInfo] = useState<ShopInfo>(DEFAULT_SHOP)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   useEffect(() => {
-    fetchProducts()
+    Promise.all([fetchShopInfo(), fetchProducts()])
   }, [])
+
+  const fetchShopInfo = async () => {
+    try {
+      const res = await fetch('/api/shop-info')
+      if (res.ok) {
+        const data = await res.json()
+        setShopInfo(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch shop info:', error)
+    }
+  }
 
   const fetchProducts = async () => {
     try {
       const res = await fetch('/api/products')
       if (res.ok) {
         const data = await res.json()
-        // Only show active products for public view
         const active = (Array.isArray(data) ? data : []).filter(
           (p: Product) => p.isActive && p.stockQuantity > 0
         )
@@ -47,6 +73,16 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
     p.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  // Build Zalo link from zalo or phone number
+  const zaloNumber = shopInfo.zalo || shopInfo.phone
+  const zaloLink = zaloNumber ? `https://zalo.me/${zaloNumber.replace(/^0/, '')}` : null
+  const displayPhone = shopInfo.phone || shopInfo.zalo || ''
+
+  // Split shop name for highlighted word
+  const shopNameParts = shopInfo.shopName || 'Kẽm Nhung'
+  const nameWords = shopNameParts.trim().split(/\s+/)
+  const highlightWord = nameWords.length > 0 ? nameWords[nameWords.length - 1] : ''
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50/50 via-white to-rose-50/30">
       {/* === Hero Section === */}
@@ -62,7 +98,14 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             <span className="text-sm text-emerald-100">Handmade with Love</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
-            Kẽm <span className="text-amber-300">Nhung</span>
+            {nameWords.length > 1 ? (
+              <>
+                {nameWords.slice(0, -1).join(' ')}{' '}
+                <span className="text-amber-300">{highlightWord}</span>
+              </>
+            ) : (
+              <span className="text-amber-300">{shopNameParts}</span>
+            )}
           </h1>
           <p className="text-lg md:text-xl text-emerald-100 max-w-2xl mx-auto mb-8 leading-relaxed">
             Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật
@@ -73,10 +116,17 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <ShoppingBag className="w-5 h-5" />
               Xem sản phẩm
             </a>
-            <a href="https://zalo.me" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 px-8 py-3 rounded-full transition-colors">
-              <Phone className="w-5 h-5" />
-              Liên hệ đặt hàng
-            </a>
+            {zaloLink ? (
+              <a href={zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 px-8 py-3 rounded-full transition-colors">
+                <MessageCircle className="w-5 h-5" />
+                Liên hệ đặt hàng
+              </a>
+            ) : (
+              <span className="inline-flex items-center justify-center gap-2 bg-white/10 border border-white/20 px-8 py-3 rounded-full text-white/60 cursor-not-allowed">
+                <MessageCircle className="w-5 h-5" />
+                Liên hệ đặt hàng
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -175,17 +225,31 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
         <div className="max-w-5xl mx-auto px-4 py-10">
           <div className="text-center">
             <h3 className="text-xl font-bold text-white mb-2">
-              Kẽm <span className="text-amber-400">Nhung</span>
+              {nameWords.length > 1 ? (
+                <>
+                  {nameWords.slice(0, -1).join(' ')}{' '}
+                  <span className="text-amber-400">{highlightWord}</span>
+                </>
+              ) : (
+                <span className="text-amber-400">{shopNameParts}</span>
+              )}
             </h3>
             <p className="text-sm mb-4">Trang sức handmade - Mỗi sản phẩm là một câu chuyện</p>
-            <div className="flex items-center justify-center gap-4 text-sm">
-              <span className="flex items-center gap-1">
-                <Phone className="w-4 h-4" />
-                Liên hệ Zalo để đặt hàng
-              </span>
-            </div>
+            {displayPhone && (
+              <div className="flex items-center justify-center gap-4 text-sm mb-2">
+                <a
+                  href={zaloLink || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:text-emerald-400 transition-colors"
+                >
+                  <Phone className="w-4 h-4" />
+                  {displayPhone}
+                </a>
+              </div>
+            )}
             <p className="text-xs text-gray-600 mt-6">
-              &copy; {new Date().getFullYear()} Kẽm Nhung. All rights reserved.
+              &copy; {new Date().getFullYear()} {shopNameParts}. All rights reserved.
             </p>
           </div>
         </div>
@@ -210,7 +274,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
           onClick={() => setSelectedProduct(null)}
         >
           <div
-            className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+            className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
@@ -270,15 +334,22 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 </Badge>
               </div>
 
-              <a
-                href="https://zalo.me"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors"
-              >
-                <Phone className="w-5 h-5" />
-                Liên hệ Zalo để đặt hàng
-              </a>
+              {zaloLink ? (
+                <a
+                  href={zaloLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Liên hệ Zalo để đặt hàng
+                </a>
+              ) : (
+                <div className="flex items-center justify-center gap-2 w-full bg-gray-200 text-gray-400 font-semibold py-3 rounded-xl cursor-not-allowed">
+                  <MessageCircle className="w-5 h-5" />
+                  Chưa cấu hình Zalo
+                </div>
+              )}
             </div>
           </div>
         </div>
