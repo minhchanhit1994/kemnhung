@@ -170,3 +170,205 @@ Restructure the admin panel (`src/components/admin-panel.tsx`) to add 4 new tabs
 - Vietnamese language used for all labels and UI text.
 - Emerald/green color scheme maintained throughout.
 - Mobile responsive with `overflow-x-auto` for all tables.
+
+---
+## Task ID: 2 - backend-api-routes-rewrite
+### Work Task
+Rewrite all backend API route files and types to match the new business model: Vietnamese handmade products shop with raw materials → production → finished products workflow. Remove Order/OrderItem/Supplier/MaterialSupplier interfaces and orders API routes. Add unit_price tracking with weighted average calculation, auto costPrice from recipe, and totalCost on production orders.
+
+### Work Summary
+
+#### Files Rewritten (9 files)
+
+1. **`src/lib/types.ts`** - Complete rewrite:
+   - `RawMaterial`: added `unitPrice` field (average unit price), removed `suppliers` relation
+   - `MaterialTransaction`: changed `material` join to `{ name: string; unit: string }` (lightweight), removed `supplier` join
+   - `ProductMaterial`: kept same structure
+   - `Product`: removed `importPrice` and `supplier` fields, `productMaterials` now typed as `ProductMaterial[]` (recipe)
+   - `ProductionOrder`: added `totalCost` field, `product` join changed to `{ id: string; name: string }` (lightweight)
+   - `ShopInfo`: kept as-is
+   - **Removed entirely**: `Order`, `OrderItem`, `Supplier`, `MaterialSupplier` interfaces
+
+2. **`src/app/api/raw-materials/route.ts`** - Simplified:
+   - GET: list with optional `?search=` filter, no longer fetches suppliers
+   - POST: create with `{name, unit, description, minStock}`, auto-sets `currentStock=0, unitPrice=0`, uses `crypto.randomUUID()`
+
+3. **`src/app/api/raw-materials/[id]/route.ts`** - Simplified:
+   - GET: single material without supplier data
+   - PUT: partial field updates including `unitPrice`
+   - DELETE: cascade handles related records
+
+4. **`src/app/api/material-transactions/route.ts`** - Major business logic rewrite:
+   - GET: list with optional `?material_id=` filter, includes `material: { name, unit }` join (no more supplier/type filters)
+   - POST (import only): **Critical weighted average unit price logic**:
+     1. Calculate `importUnitPrice = totalPrice / quantity`
+     2. Fetch current `currentStock` and `unitPrice` from raw_materials
+     3. Calculate `newAvgUnitPrice = ((oldStock × oldUnitPrice) + totalPrice) / (oldStock + quantity)`
+     4. Update raw_materials: `currentStock += quantity`, `unitPrice = newAvgUnitPrice`
+     5. Create transaction with `type='import'`
+
+5. **`src/app/api/products/route.ts`** - Recipe management added:
+   - GET: list with optional `?active=1` and `?search=` filters, includes full recipe (`product_materials` with material details)
+   - POST: create product, if body includes `materials: [{materialId, quantity}]` array:
+     - Insert `product_materials` entries
+     - Calculate `costPrice = Σ(material.quantity × material.unitPrice)`
+     - Update product's `cost_price`
+
+6. **`src/app/api/products/[id]/route.ts`** - Recipe management added:
+   - GET: product with full recipe (material name, unit, unitPrice)
+   - PUT: if body has `materials` array → delete all existing `product_materials`, insert new ones, recalculate `costPrice`
+   - DELETE: cascade handles recipe cleanup
+
+7. **`src/app/api/product-materials/route.ts`** - Cost calculation added:
+   - GET (`?product_id=xxx`): returns `{ materials: [...], totalCost: number }` - calculates total cost from recipe
+   - POST: add material to recipe, then **recalculate product costPrice** via helper function
+   - DELETE (`?id=xxx`): delete entry, then **recalculate product costPrice** via helper function
+   - Helper `recalculateProductCost()`: fetches all recipe materials, calculates `Σ(quantity × unitPrice)`, updates product
+
+8. **`src/app/api/production-orders/route.ts`** - Total cost calculation added:
+   - GET: list with optional `?status=` filter, includes `product: { id, name }` (lightweight)
+   - POST: **Critical production logic**:
+     1. Get product recipe with material details (name, currentStock, unitPrice)
+     2. Check each material: `currentStock >= recipe.quantity × production.quantity`
+     3. If insufficient: return 400 with Vietnamese error `"Nguyên liệu {name} không đủ. Cần {needed}, hiện có {available}"`
+     4. If sufficient: deduct stock, calculate `totalCost = Σ(recipe.quantity × unitPrice × production.quantity)`, add to product stock, create order with `status='completed'`
+
+9. **`src/app/api/production-orders/[id]/route.ts`** - Simplified:
+   - GET: single order with `product: { id, name }` (not full product)
+   - PUT: partial status/notes updates
+
+10. **`src/app/api/dashboard/route.ts`** - Completely rewritten for new business model:
+    - Returns: `{ totalMaterials, lowStockMaterials, totalProducts, totalProductStock, totalProductionOrders, recentProductionOrders }`
+    - Removed all order-related stats (totalOrders, pendingOrders, completedOrders, totalRevenue, recentOrders, lowStockProducts, outOfStockProducts, activeProducts, totalSuppliers)
+    - `totalProductStock`: sum of all products' stock_quantity
+
+#### Files Deleted
+- `src/app/api/orders/route.ts`
+- `src/app/api/orders/[id]/route.ts`
+
+#### Files NOT Modified (kept as-is per requirements)
+- `src/app/api/shop-info/route.ts`
+- `src/app/api/auth/login/route.ts`
+- `src/app/api/auth/seed/route.ts`
+- `src/app/api/auth/check/route.ts`
+- `src/app/api/auth/change-password/route.ts`
+- `src/app/api/upload/route.ts`
+
+#### Key Business Logic
+- **Weighted average unit price**: When importing materials, the unit price is recalculated as a weighted average based on existing stock and new purchase
+- **Auto cost calculation**: Product cost is always auto-calculated from recipe materials × their unit prices
+- **Production stock validation**: Before production, checks all material stock levels and returns specific Vietnamese error messages for insufficient materials
+- **`is_active` as INTEGER**: All code treats `is_active` as 0/1 integer, not boolean
+
+#### Verification
+- ESLint passes with zero errors.
+- Dev server compiles successfully.
+- `crypto.randomUUID()` used for all ID generation.
+
+---
+## Task ID: 2 - types-dashboard-update
+### Work Task
+Update `src/lib/types.ts` and `src/app/api/dashboard/route.ts` to match the simplified 3-tab admin workflow (Tổng quan, Nguyên liệu, Sản phẩm & Sản xuất). Types must match exact DB columns. Dashboard must return stats relevant to the simplified workflow with order data for storefront integration.
+
+### Work Summary
+
+#### Files Modified
+
+1. **`src/lib/types.ts`** - Updated all interfaces to match actual database columns:
+   - `RawMaterial`: added `totalCost: number` field (maps to `total_cost` column). `unitPrice` was already present.
+   - `Product`: added `unit: string` field (maps to `unit` column). Also restored `importPrice: number` and `supplier: string` fields that exist in DB (`import_price`, `supplier` columns) but were previously removed by Task ID 2.
+   - `MaterialTransaction`: `totalPrice` was already present. No changes needed.
+   - `ProductionOrder`: `totalCost` was already present. No changes needed.
+   - `Order`: **Re-added** (was previously removed by Task ID 2). Maps to `orders` table with `orderItems?: OrderItem[]` joined field. Needed for storefront functionality.
+   - `OrderItem`: **Re-added** (was previously removed by Task ID 2). Maps to `order_items` table with camelCase fields: `orderId`, `productId`, `productName`, `unitPrice`.
+   - `ShopInfo`: Kept as-is, already matches DB.
+   - `ProductMaterial`: Kept as-is, already matches DB.
+   - `Supplier` and `MaterialSupplier`: Not re-added (already removed by prior task, not part of simplified workflow — suppliers are just text fields on material imports).
+
+2. **`src/app/api/dashboard/route.ts`** - Completely rewritten to return stats for the 3-tab workflow:
+   - `totalRawMaterials`: count of raw_materials (renamed from `totalMaterials` to match frontend `DashboardStats` interface)
+   - `totalProducts`: count of all products
+   - `activeProducts`: count of products where `is_active = 1`
+   - `lowStockMaterials`: array of `{id, name, currentStock, minStock, unit}` where `current_stock <= min_stock AND min_stock > 0`
+   - `outOfStockProducts`: count of active products where `stock_quantity <= 0`
+   - `totalProductionOrders`: count of production_orders
+   - `recentProductionOrders`: last 5 production orders with `product: {id, name}` join
+   - `totalRevenue`: sum of `total_amount` from completed orders
+   - `recentOrders`: last 5 orders with batch-fetched `orderItems`
+
+   Removed fields: `totalProductStock`, `totalSuppliers`, `totalOrders`, `pendingOrders`, `completedOrders`, `lowStockProducts`.
+
+   Key patterns: uses `.eq('is_active', 1)` for integer boolean, batch-fetches order items with `.in('order_id', ids)`, all responses in camelCase via `toCamelCase`.
+
+#### Key Design Decisions
+- **Matched exact DB columns**: Every TypeScript field maps 1:1 to a database column (camelCase ↔ snake_case via convert utility)
+- **Restored Order/OrderItem**: Previous agent removed these but they're needed for storefront; orders table still exists in DB
+- **Restored importPrice/supplier on Product**: These DB columns exist and may be used by storefront or future features
+- **Dashboard key rename**: `totalMaterials` → `totalRawMaterials` to match existing frontend `DashboardStats` interface
+- **No frontend files modified**: All changes are backend-only (types + API route)
+
+#### Verification
+- ESLint passes with zero errors.
+- Dev server compiles successfully with no route errors.
+- All 7 interfaces in types.ts cover all 8 DB tables (orders, order_items, products, raw_materials, material_transactions, product_materials, production_orders, shop_info).
+
+---
+## Task ID: 3 - admin-panel-rewrite
+### Work Task
+Completely rewrite `src/components/admin-panel.tsx` for a simplified 3-tab workflow matching the exact handmade products business flow: Tổng quan (Dashboard), Nguyên liệu (Raw Materials Management), and Sản phẩm & Sản xuất (Products & Production).
+
+### Work Summary
+
+#### Problem
+The existing `src/components/admin-panel.tsx` was 1551 lines with 4 tabs, a broken `MaterialTx` type reference, and didn't match the user's actual workflow. It needed a complete rewrite to a clean 3-tab structure.
+
+#### File Modified
+
+**`src/components/admin-panel.tsx`** - Complete rewrite (~830 lines, down from ~1551):
+
+**3-Tab Structure:**
+
+1. **Tab 1: Tổng quan (Dashboard)**
+   - 5 stat cards: Nguyên liệu, Thành phẩm (with active count), Phiếu SX, Doanh thu (totalRevenue from completed orders), NL sắp hết
+   - Low stock materials alert card with color-coded badges (red for out of stock, amber for low)
+   - Two-column grid: "SX gần đây" (last 5 production orders) and "Đơn hàng gần đây" (last 5 orders)
+   - Order status badges with appropriate colors (completed=green, pending=yellow, cancelled=red)
+
+2. **Tab 2: Nguyên liệu (Raw Materials Management)**
+   - **Section A: Danh sách nguyên liệu** - Table with: Tên, Đơn vị, Tồn kho (green/amber/red badges), Đơn giá, Tổng vốn, Thao tác (edit/delete). Search input and "Thêm NL" button.
+   - **Section B: Nhập kho & Lịch sử** - "Nhập kho" button opens dialog: select material (shows current stock), quantity, totalPrice, notes. POST to `/api/material-transactions` with auto-calculated unit price preview. Transaction history table with columns: Ngày, Nguyên liệu, Loại (import=green/export=red/adjustment=blue badges), SL, Đơn giá, Tổng tiền, Ghi chú.
+
+3. **Tab 3: Sản phẩm & Sản xuất (Products & Production)**
+   - **Section A: Danh sách thành phẩm** - Table with: Ảnh, Tên, Giá vốn, Giá bán, Tồn kho, Trạng thái (Đang bán/Ẩn), Thao tác. "Thêm SP" button opens dialog with:
+     - Basic info: Tên, Đơn vị (select: cái/chiếc/bộ/hộp), Mô tả, Giá bán, Đang bán (checkbox)
+     - Image upload via FormData POST to `/api/upload`
+     - **CÔNG THỨC section**: Shows existing recipe materials with name, qty × unit price = cost per line. "Thêm NL vào công thức" with material select + quantity input. Delete individual recipe lines. **TỔNG GIÁ VỐN** displayed prominently in emerald bold.
+     - Recipe loads from `/api/product-materials?product_id=xxx` when editing, synced via DELETE + POST on save
+   - **Section B: Sản xuất** - "Sản xuất" button opens dialog: select product, enter quantity. Auto-shows recipe materials with stock check (green text if sufficient, red text if not). Warning if product has no recipe. POST to `/api/production-orders`. Production history table: Ngày, Sản phẩm, SL, Giá vốn SX, Trạng thái, Ghi chú.
+
+**Key Fixes from Previous Version:**
+- Removed broken `MaterialTx` type reference → uses proper `MaterialTransaction` from `@/lib/types`
+- Removed unused `Gift` import, added required icons (`Package`, `ArrowDownToLine`, `History`, `Calculator`, `Shield`)
+- Removed unused state variables (`productSearch`, `recipeOpen`, `importMode`, `newMaterialName`, `newMaterialUnit`)
+- Simplified import dialog (removed "create new material" mode — just select existing)
+- Production stock check uses `product.productMaterials` from products API (already fetched with recipe data) instead of separate product-materials fetch
+- All error handling with `alert()` for user-facing errors + `try/catch` with console.error for logging
+
+**DashboardStats Interface:**
+Updated to match actual API response: added `totalRevenue: number` and `recentOrders: Order[]` fields.
+
+**Props Interface:** Kept identical — `AdminPanelProps { onBack, onLogout, username, onChangePassword }`.
+
+**Design:**
+- Emerald/green color scheme with `data-[state=active]:bg-emerald-100` on tab triggers
+- Vietnamese text throughout
+- Mobile responsive: tab labels hidden on small screens, `overflow-x-auto` on all tables, `max-h-96 overflow-y-auto` on long tables
+- Sticky header with Shield icon + admin badge
+- shadcn/ui components only (Card, Table, Dialog, Select, Badge, Checkbox, Tabs, Skeleton)
+- Lucide icons: BarChart3, FlaskConical, Package, Plus, Pencil, Trash2, Upload, ImageIcon, Save, ArrowLeft, LogOut, KeyRound, Shield, Search, AlertTriangle, Hammer, ArrowDownToLine, Calculator
+
+#### Verification
+- ESLint passes with zero errors.
+- Dev server compiles successfully with no route errors.
+- All 200 status codes on GET / requests.
+- `fetchAll` fetches 5 endpoints in parallel: raw-materials, material-transactions, products, production-orders, dashboard.
