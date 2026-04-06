@@ -46,6 +46,7 @@ export interface Product {
   supplier: string
   stockQuantity: number
   imageUrl: string | null
+  videoUrl: string | null
   isActive: boolean
   createdAt: string
   updatedAt: string

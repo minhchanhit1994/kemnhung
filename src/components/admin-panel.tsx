@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,6 +57,17 @@ import {
   TrendingDown,
   Wallet,
   DollarSign,
+  ClipboardList,
+  Video,
+  X,
+  User,
+  Phone,
+  MapPin,
+  CheckCircle2,
+  XCircle,
+  Eye,
+  ShoppingCart,
+  Clock,
 } from 'lucide-react'
 import {
   BarChart,
@@ -75,6 +86,7 @@ import type {
   ProductMaterial,
   ProductionOrder,
   Order,
+  OrderItem,
 } from '@/lib/types'
 
 interface AdminPanelProps {
@@ -93,7 +105,6 @@ interface DashboardStats {
   recentProductionOrders: ProductionOrder[]
   totalRevenue: number
   recentOrders: Order[]
-  // Financial data
   totalCapital: number
   totalProductionCost: number
   totalCogs: number
@@ -115,6 +126,18 @@ const PRODUCTION_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Đã hủy',
 }
 
+const ORDER_STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
+}
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  pending: 'Chờ xác nhận hoàn thành',
+  completed: 'Hoàn thành',
+  cancelled: 'Đã hủy',
+}
+
 export default function AdminPanel({ onBack, onLogout, username, onChangePassword }: AdminPanelProps) {
   // === Tab ===
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -131,17 +154,26 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>([])
   const [productMaterials, setProductMaterials] = useState<{ materials: (ProductMaterial & { material?: RawMaterial })[]; totalCost: number } | null>(null)
 
+  // === Orders ===
+  const [orders, setOrders] = useState<(Order & { orderItems?: OrderItem[] })[]>([])
+
   // === UI State ===
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [productSearch, setProductSearch] = useState('')
+  const [orderSearch, setOrderSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
 
   // === Dialog States ===
   const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [productDialogOpen, setProductDialogOpen] = useState(false)
   const [productionDialogOpen, setProductionDialogOpen] = useState(false)
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false)
+  const [orderDetailDialogOpen, setOrderDetailDialogOpen] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<(Order & { orderItems?: OrderItem[] }) | null>(null)
 
   // === Form States ===
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | null>(null)
@@ -156,6 +188,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     price: '',
     unit: 'cái',
     imageUrl: '',
+    videoUrl: '',
     isActive: true,
   })
   const [recipeMaterials, setRecipeMaterials] = useState<{ materialId: string; quantity: string }[]>([])
@@ -163,22 +196,35 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
 
   const [productionForm, setProductionForm] = useState({ productId: '', quantity: '', notes: '' })
 
+  const [orderForm, setOrderForm] = useState({
+    customerName: '',
+    customerPhone: '',
+    customerAddress: '',
+    notes: '',
+  })
+  const [orderItems, setOrderItems] = useState<{ productId: string; productName: string; quantity: number; unitPrice: number }[]>([])
+  const [newOrderItem, setNewOrderItem] = useState({ productId: '', quantity: '' })
+
+  const videoInputRef = useRef<HTMLInputElement>(null)
+
   // === Fetch All Data ===
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [materialsRes, transactionsRes, productsRes, productionRes, dashboardRes] = await Promise.all([
+      const [materialsRes, transactionsRes, productsRes, productionRes, dashboardRes, ordersRes] = await Promise.all([
         fetch('/api/raw-materials'),
         fetch('/api/material-transactions'),
         fetch('/api/products'),
         fetch('/api/production-orders'),
         fetch('/api/dashboard'),
+        fetch('/api/orders'),
       ])
       if (materialsRes.ok) setRawMaterials(await materialsRes.json())
       if (transactionsRes.ok) setMaterialTransactions(await transactionsRes.json())
       if (productsRes.ok) setProducts(await productsRes.json())
       if (productionRes.ok) setProductionOrders(await productionRes.json())
       if (dashboardRes.ok) setStats(await dashboardRes.json())
+      if (ordersRes.ok) setOrders(await ordersRes.json())
     } catch (error) {
       console.error('Failed to fetch data:', error)
     } finally {
@@ -221,7 +267,40 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     [rawMaterials, search]
   )
 
-  // Production dialog: get recipe for selected product
+  const filteredProducts = useMemo(
+    () => products.filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase())),
+    [products, productSearch]
+  )
+
+  // Reserved stock per product (from pending orders)
+  const reservedStockMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const order of orders) {
+      if (order.status !== 'pending' || !order.orderItems) continue
+      for (const item of order.orderItems) {
+        map[item.productId] = (map[item.productId] || 0) + item.quantity
+      }
+    }
+    return map
+  }, [orders])
+
+  const filteredOrders = useMemo(() => {
+    const s = orderSearch.toLowerCase()
+    if (!s) return orders
+    return orders.filter(
+      (o) =>
+        o.customerName?.toLowerCase().includes(s) ||
+        o.customerPhone?.toLowerCase().includes(s) ||
+        o.id.toLowerCase().includes(s)
+    )
+  }, [orders, orderSearch])
+
+  // Order totals
+  const orderTotal = useMemo(() => {
+    return orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+  }, [orderItems])
+
+  // Production dialog helpers
   const selectedProductionRecipe = useMemo(() => {
     if (!productionForm.productId) return []
     const product = products.find((p) => p.id === productionForm.productId)
@@ -346,9 +425,9 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
         price: String(product.price),
         unit: product.unit || 'cái',
         imageUrl: product.imageUrl || '',
+        videoUrl: product.videoUrl || '',
         isActive: product.isActive,
       })
-      // Load recipe from API
       try {
         const res = await fetch(`/api/product-materials?product_id=${product.id}`)
         if (res.ok) {
@@ -367,7 +446,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       }
     } else {
       setEditingProduct(null)
-      setProductForm({ name: '', description: '', price: '', unit: 'cái', imageUrl: '', isActive: true })
+      setProductForm({ name: '', description: '', price: '', unit: 'cái', imageUrl: '', videoUrl: '', isActive: true })
       setRecipeMaterials([])
       setProductMaterials(null)
     }
@@ -407,6 +486,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
           price: Number(productForm.price) || 0,
           unit: productForm.unit,
           imageUrl: productForm.imageUrl,
+          videoUrl: productForm.videoUrl,
           isActive: productForm.isActive,
         }),
       })
@@ -415,9 +495,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
         const savedProduct = await res.json()
         const productId = savedProduct.id || editingProduct?.id
 
-        // Sync recipe materials via API
         if (productId) {
-          // First delete all existing recipe entries
           if (editingProduct) {
             const existingRes = await fetch(`/api/product-materials?product_id=${productId}`)
             if (existingRes.ok) {
@@ -429,7 +507,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               )
             }
           }
-          // Then add new ones
           await Promise.all(
             recipeMaterials.map((rm) =>
               fetch('/api/product-materials', {
@@ -493,6 +570,52 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     }
   }
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Client-side validation: max 30 seconds
+    if (file.type.startsWith('video/')) {
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src)
+        if (video.duration > 30) {
+          alert('Video quá dài! Vui lòng chọn video dưới 30 giây.')
+          return
+        }
+        // Proceed with upload
+        uploadVideo(file)
+      }
+      video.onerror = () => {
+        alert('Không thể đọc video. Vui lòng thử file khác.')
+      }
+      video.src = URL.createObjectURL(file)
+    } else {
+      alert('Vui lòng chọn file video (MP4, WebM, MOV)')
+    }
+  }
+
+  const uploadVideo = async (file: File) => {
+    try {
+      setUploadingVideo(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      if (res.ok) {
+        const data = await res.json()
+        setProductForm((prev) => ({ ...prev, videoUrl: data.url }))
+      } else {
+        const errData = await res.json()
+        alert(errData.error || 'Upload video thất bại')
+      }
+    } catch {
+      alert('Lỗi upload video')
+    } finally {
+      setUploadingVideo(false)
+    }
+  }
+
   // === Production ===
   const openProductionDialog = () => {
     setProductionForm({ productId: '', quantity: '', notes: '' })
@@ -523,6 +646,100 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     } finally {
       setSaving(false)
     }
+  }
+
+  // === Orders CRUD ===
+  const openOrderDialog = () => {
+    setOrderForm({ customerName: '', customerPhone: '', customerAddress: '', notes: '' })
+    setOrderItems([])
+    setNewOrderItem({ productId: '', quantity: '' })
+    setOrderDialogOpen(true)
+  }
+
+  const addOrderItem = () => {
+    const product = products.find((p) => p.id === newOrderItem.productId)
+    if (!newOrderItem.productId || !newOrderItem.quantity || !product) return
+    const qty = Number(newOrderItem.quantity) || 0
+    // Check available stock (total - reserved)
+    const reserved = reservedStockMap[product.id] || 0
+    const available = product.stockQuantity - reserved
+    if (qty > available) {
+      alert(`Sản phẩm "${product.name}" chỉ còn ${available} sản phẩm khả dụng!`)
+      return
+    }
+    setOrderItems([
+      ...orderItems,
+      {
+        productId: product.id,
+        productName: product.name,
+        quantity: qty,
+        unitPrice: product.price,
+      },
+    ])
+    setNewOrderItem({ productId: '', quantity: '' })
+  }
+
+  const removeOrderItem = (index: number) => {
+    setOrderItems(orderItems.filter((_, i) => i !== index))
+  }
+
+  const saveOrder = async () => {
+    if (orderItems.length === 0) {
+      alert('Vui lòng thêm ít nhất 1 sản phẩm!')
+      return
+    }
+    try {
+      setSaving(true)
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: orderForm.customerName,
+          customerPhone: orderForm.customerPhone,
+          customerAddress: orderForm.customerAddress,
+          notes: orderForm.notes,
+          items: orderItems,
+        }),
+      })
+      if (res.ok) {
+        setOrderDialogOpen(false)
+        fetchAll()
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Lỗi tạo đơn hàng')
+      }
+    } catch (error) {
+      console.error('Order error:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      setSaving(true)
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (res.ok) {
+        setOrderDetailDialogOpen(false)
+        fetchAll()
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Lỗi cập nhật đơn hàng')
+      }
+    } catch (error) {
+      console.error('Order update error:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const viewOrderDetail = (order: Order & { orderItems?: OrderItem[] }) => {
+    setSelectedOrder(order)
+    setOrderDetailDialogOpen(true)
   }
 
   // === Loading Skeleton ===
@@ -590,14 +807,18 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             </TabsTrigger>
             <TabsTrigger value="production" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
               <Hammer className="w-4 h-4" />
-              <span className="hidden sm:inline">SP &amp; Sản xuất</span>
+              <span className="hidden sm:inline">Thành phẩm</span>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
+              <ClipboardList className="w-4 h-4" />
+              <span className="hidden sm:inline">Đơn hàng</span>
             </TabsTrigger>
           </TabsList>
 
           {/* ==================== Tab 1: TỔNG QUAN ==================== */}
           <TabsContent value="dashboard">
             <div className="space-y-6">
-              {/* Financial Cards - Doanh thu / Vốn / Lời-Lỗ */}
+              {/* Financial Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="border-l-4 border-l-emerald-500">
                   <CardContent className="p-4">
@@ -666,7 +887,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={stats.monthlyFinance.map((m) => ({
                           ...m,
-                          month: m.month.substring(5), // "06" => "6"
+                          month: m.month.substring(5),
                         }))} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
@@ -692,7 +913,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </Card>
               )}
 
-              {/* Summary Cards - row 2 */}
+              {/* Summary Cards row 2 */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="border-l-4 border-l-teal-500">
                   <CardContent className="p-4">
@@ -717,14 +938,15 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-orange-500">
+                <Card className="border-l-4 border-l-purple-500">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs text-muted-foreground">Phiếu SX</p>
-                        <p className="text-2xl font-bold">{stats?.totalProductionOrders ?? productionOrders.length}</p>
+                        <p className="text-xs text-muted-foreground">Đơn hàng</p>
+                        <p className="text-2xl font-bold">{orders.length}</p>
+                        <p className="text-xs text-yellow-600">{orders.filter((o) => o.status === 'pending').length} chờ xác nhận</p>
                       </div>
-                      <Hammer className="w-8 h-8 text-orange-500" />
+                      <ShoppingCart className="w-8 h-8 text-purple-500" />
                     </div>
                   </CardContent>
                 </Card>
@@ -771,6 +993,50 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               )}
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Recent Orders on Dashboard */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <ShoppingCart className="w-5 h-5 text-purple-500" />
+                      Đơn hàng gần đây
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {orders.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">Chưa có đơn hàng</p>
+                    ) : (
+                      <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Khách hàng</TableHead>
+                              <TableHead className="text-right">Tổng tiền</TableHead>
+                              <TableHead>Trạng thái</TableHead>
+                              <TableHead>Ngày</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {orders.slice(0, 5).map((order) => (
+                              <TableRow key={order.id} className="cursor-pointer" onClick={() => viewOrderDetail(order)}>
+                                <TableCell className="font-medium">{order.customerName}</TableCell>
+                                <TableCell className="text-right text-emerald-700 font-medium">
+                                  {formatPrice(order.totalAmount)}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={ORDER_STATUS_COLORS[order.status] || ''}>
+                                    {ORDER_STATUS_LABELS[order.status] || order.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{formatDateShort(order.createdAt)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {/* Recent Production Orders */}
                 <Card>
                   <CardHeader>
@@ -783,7 +1049,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                     {(!stats?.recentProductionOrders || stats.recentProductionOrders.length === 0) ? (
                       <p className="text-center text-muted-foreground py-8">Chưa có phiếu sản xuất</p>
                     ) : (
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto max-h-64 overflow-y-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -804,66 +1070,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-xs text-muted-foreground">{formatDateShort(po.createdAt)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Recent Orders */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Package className="w-5 h-5 text-emerald-500" />
-                      Đơn hàng gần đây
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {(!stats?.recentOrders || stats.recentOrders.length === 0) ? (
-                      <p className="text-center text-muted-foreground py-8">Chưa có đơn hàng</p>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Khách hàng</TableHead>
-                              <TableHead className="text-right">Tổng tiền</TableHead>
-                              <TableHead>Trạng thái</TableHead>
-                              <TableHead>Ngày</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {stats.recentOrders.map((order) => (
-                              <TableRow key={order.id}>
-                                <TableCell className="font-medium">{order.customerName}</TableCell>
-                                <TableCell className="text-right text-emerald-700 font-medium">
-                                  {formatPrice(order.totalAmount)}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    className={
-                                      order.status === 'completed'
-                                        ? 'bg-green-100 text-green-800'
-                                        : order.status === 'pending'
-                                        ? 'bg-yellow-100 text-yellow-800'
-                                        : order.status === 'cancelled'
-                                        ? 'bg-red-100 text-red-800'
-                                        : 'bg-gray-100 text-gray-800'
-                                    }
-                                  >
-                                    {order.status === 'completed'
-                                      ? 'Hoàn thành'
-                                      : order.status === 'pending'
-                                      ? 'Chờ xử lý'
-                                      : order.status === 'cancelled'
-                                      ? 'Đã hủy'
-                                      : order.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground">{formatDateShort(order.createdAt)}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -1064,7 +1270,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             </div>
           </TabsContent>
 
-          {/* ==================== Tab 3: SẢN PHẨM & SẢN XUẤT ==================== */}
+          {/* ==================== Tab 3: THÀNH PHẨM ==================== */}
           <TabsContent value="production">
             <div className="space-y-6">
               {/* Section A: Danh sách thành phẩm */}
@@ -1078,10 +1284,21 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       </CardTitle>
                       <CardDescription>{products.length} sản phẩm</CardDescription>
                     </div>
-                    <Button onClick={() => openProductDialog()} className="bg-emerald-600 hover:bg-emerald-700">
-                      <Plus className="w-4 h-4 mr-1" />
-                      Thêm SP
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Tìm sản phẩm..."
+                          className="pl-9 w-40 sm:w-48"
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={() => openProductDialog()} className="bg-emerald-600 hover:bg-emerald-700">
+                        <Plus className="w-4 h-4 mr-1" />
+                        Thêm SP
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -1099,61 +1316,86 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {products.length === 0 ? (
+                        {filteredProducts.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                              Chưa có sản phẩm
+                              {productSearch ? 'Không tìm thấy sản phẩm' : 'Chưa có sản phẩm'}
                             </TableCell>
                           </TableRow>
                         ) : (
-                          products.map((product) => (
-                            <TableRow key={product.id}>
-                              <TableCell>
-                                <div className="w-12 h-12 rounded bg-gray-50 flex items-center justify-center overflow-hidden border">
-                                  {product.imageUrl ? (
-                                    <img src={product.imageUrl} alt="" className="w-full h-full object-contain p-1" />
+                          filteredProducts.map((product) => {
+                            const reserved = reservedStockMap[product.id] || 0
+                            return (
+                              <TableRow key={product.id}>
+                                <TableCell>
+                                  <div className="w-12 h-12 rounded bg-gray-50 flex items-center justify-center overflow-hidden border">
+                                    {product.imageUrl ? (
+                                      <img src={product.imageUrl} alt="" className="w-full h-full object-contain p-1" />
+                                    ) : (
+                                      <ImageIcon className="w-6 h-6 text-gray-300" />
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="max-w-[200px]">
+                                    <p className="font-medium truncate">{product.name}</p>
+                                    {product.videoUrl && (
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <Video className="w-3 h-3" />
+                                        Có video
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right text-muted-foreground">
+                                  {product.costPrice > 0 ? formatPrice(product.costPrice) : '-'}
+                                </TableCell>
+                                <TableCell className="text-right text-emerald-700 font-semibold">
+                                  {formatPrice(product.price)}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {reserved > 0 ? (
+                                    <Badge variant={product.stockQuantity - reserved <= 0 ? 'destructive' : 'secondary'} className="space-x-1">
+                                      <span>{product.stockQuantity - reserved}</span>
+                                      <span className="text-muted-foreground">({reserved})</span>
+                                    </Badge>
                                   ) : (
-                                    <ImageIcon className="w-6 h-6 text-gray-300" />
+                                    <Badge variant={product.stockQuantity <= 0 ? 'destructive' : 'secondary'}>
+                                      {product.stockQuantity}
+                                    </Badge>
                                   )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-medium max-w-[200px] truncate">{product.name}</TableCell>
-                              <TableCell className="text-right text-muted-foreground">
-                                {product.costPrice > 0 ? formatPrice(product.costPrice) : '-'}
-                              </TableCell>
-                              <TableCell className="text-right text-emerald-700 font-semibold">
-                                {formatPrice(product.price)}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge variant={product.stockQuantity <= 0 ? 'destructive' : 'secondary'}>
-                                  {product.stockQuantity}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                <Badge
-                                  variant={product.isActive ? 'default' : 'outline'}
-                                  className={product.isActive ? 'bg-emerald-100 text-emerald-800' : ''}
-                                >
-                                  {product.isActive ? 'Đang bán' : 'Ẩn'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center justify-center gap-1">
-                                  <Button size="icon" variant="ghost" onClick={() => openProductDialog(product)}>
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="text-red-500 hover:text-red-600"
-                                    onClick={() => deleteProduct(product.id)}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Badge
+                                    variant={product.isActive ? 'default' : 'outline'}
+                                    className={product.isActive ? 'bg-emerald-100 text-emerald-800' : ''}
                                   >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
+                                    {product.isActive ? 'Đang bán' : 'Ẩn'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center justify-center gap-1">
+                                    {product.videoUrl && (
+                                      <Button size="icon" variant="ghost" onClick={() => window.open(product.videoUrl!, '_blank')} title="Xem video">
+                                        <Video className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                    <Button size="icon" variant="ghost" onClick={() => openProductDialog(product)}>
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="text-red-500 hover:text-red-600"
+                                      onClick={() => deleteProduct(product.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })
                         )}
                       </TableBody>
                     </Table>
@@ -1216,6 +1458,125 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">
                                 {po.notes || '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* ==================== Tab 4: ĐƠN HÀNG ==================== */}
+          <TabsContent value="orders">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <ClipboardList className="w-5 h-5 text-purple-500" />
+                        Danh sách đơn hàng
+                      </CardTitle>
+                      <CardDescription>{orders.length} đơn hàng</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Tìm đơn hàng..."
+                          className="pl-9 w-40 sm:w-48"
+                          value={orderSearch}
+                          onChange={(e) => setOrderSearch(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={openOrderDialog} className="bg-emerald-600 hover:bg-emerald-700">
+                        <Plus className="w-4 h-4 mr-1" />
+                        Tạo đơn
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Mã ĐH</TableHead>
+                          <TableHead>Khách hàng</TableHead>
+                          <TableHead className="hidden sm:table-cell">SĐT</TableHead>
+                          <TableHead className="text-right">Tổng tiền</TableHead>
+                          <TableHead>Trạng thái</TableHead>
+                          <TableHead>Ngày tạo</TableHead>
+                          <TableHead className="text-center">Thao tác</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredOrders.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                              {orderSearch ? 'Không tìm thấy đơn hàng' : 'Chưa có đơn hàng'}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredOrders.map((order) => (
+                            <TableRow key={order.id}>
+                              <TableCell className="text-xs font-mono text-muted-foreground">
+                                {order.id.substring(0, 8)}...
+                              </TableCell>
+                              <TableCell className="font-medium">{order.customerName}</TableCell>
+                              <TableCell className="hidden sm:table-cell text-muted-foreground">{order.customerPhone || '-'}</TableCell>
+                              <TableCell className="text-right text-emerald-700 font-semibold">
+                                {formatPrice(order.totalAmount)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={ORDER_STATUS_COLORS[order.status] || ''}>
+                                  {ORDER_STATUS_LABELS[order.status] || order.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                                {formatDateShort(order.createdAt)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-center gap-1">
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => viewOrderDetail(order)}
+                                    title="Xem chi tiết"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  {order.status === 'pending' && (
+                                    <>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="text-green-600 hover:text-green-700"
+                                        onClick={() => updateOrderStatus(order.id, 'completed')}
+                                        title="Xác nhận hoàn thành"
+                                      >
+                                        <CheckCircle2 className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="text-red-500 hover:text-red-600"
+                                        onClick={() => {
+                                          if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+                                            updateOrderStatus(order.id, 'cancelled')
+                                          }
+                                        }}
+                                        title="Hủy đơn hàng"
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -1488,6 +1849,55 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               </div>
             </div>
 
+            {/* Video Upload */}
+            <div>
+              <Label className="flex items-center gap-2">
+                <Video className="w-4 h-4" />
+                Video sản phẩm (tối đa 30 giây)
+              </Label>
+              <div className="mt-1 space-y-2">
+                {productForm.videoUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border bg-gray-50">
+                    <video
+                      src={productForm.videoUrl}
+                      controls
+                      className="w-full max-h-48 object-contain"
+                      preload="metadata"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-7 w-7"
+                      onClick={() => setProductForm({ ...productForm, videoUrl: '' })}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <label className="cursor-pointer">
+                      <input
+                        ref={videoInputRef}
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        className="hidden"
+                        onChange={handleVideoUpload}
+                        disabled={uploadingVideo}
+                      />
+                      <Button type="button" variant="outline" size="sm" disabled={uploadingVideo} asChild>
+                        <span>
+                          <Video className="w-4 h-4 mr-1" />
+                          {uploadingVideo ? 'Đang upload video...' : 'Tải video lên'}
+                        </span>
+                      </Button>
+                    </label>
+                    <span className="text-xs text-muted-foreground">MP4, WebM, MOV - tối đa 30 giây</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* === CÔNG THỨC (Recipe) === */}
             <div className="border rounded-lg p-4 bg-gray-50">
               <div className="flex items-center gap-2 mb-3">
@@ -1495,7 +1905,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 <h3 className="font-semibold text-sm">CÔNG THỨC</h3>
               </div>
 
-              {/* Existing recipe materials */}
               {recipeMaterials.length > 0 && (
                 <div className="space-y-2 mb-3">
                   {recipeMaterials.map((rm, idx) => {
@@ -1506,7 +1915,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                     return (
                       <div key={idx} className="flex items-center gap-2 bg-white rounded-md p-2 text-sm">
                         <span className="font-medium flex-1">{mat?.name || 'NL không xác định'}</span>
-                        <span className="text-muted-foreground">× {qty} {mat?.unit || ''}</span>
+                        <span className="text-muted-foreground">&times; {qty} {mat?.unit || ''}</span>
                         <span className="text-muted-foreground">{formatPrice(unitPrice)}</span>
                         <span className="font-medium w-28 text-right">{formatPrice(cost)}</span>
                         <Button
@@ -1524,7 +1933,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </div>
               )}
 
-              {/* Add new recipe material */}
               <div className="flex items-end gap-2 mb-3">
                 <div className="flex-1">
                   <Label className="text-xs">Nguyên liệu</Label>
@@ -1569,7 +1977,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </Button>
               </div>
 
-              {/* Total Cost */}
               <div className="flex items-center justify-between bg-white rounded-md p-3 border">
                 <span className="font-semibold text-sm">TỔNG GIÁ VỐN</span>
                 <span className="font-bold text-emerald-600 text-lg">{formatPrice(recipeTotalCost)}</span>
@@ -1625,7 +2032,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               />
             </div>
 
-            {/* Stock Check */}
             {selectedProductionRecipe.length > 0 && Number(productionForm.quantity) > 0 && (
               <div className="border rounded-lg p-3 bg-gray-50">
                 <div className="flex items-center gap-2 mb-2">
@@ -1684,6 +2090,264 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               Sản xuất
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Order Dialog */}
+      <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tạo đơn hàng</DialogTitle>
+            <DialogDescription>Nhập thông tin khách hàng và chọn sản phẩm</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Customer Info */}
+            <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <User className="w-4 h-4 text-purple-600" />
+                Thông tin khách hàng
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Tên khách hàng *</Label>
+                  <Input
+                    value={orderForm.customerName}
+                    onChange={(e) => setOrderForm({ ...orderForm, customerName: e.target.value })}
+                    placeholder="VD: Nguyễn Văn A"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Số điện thoại</Label>
+                  <Input
+                    value={orderForm.customerPhone}
+                    onChange={(e) => setOrderForm({ ...orderForm, customerPhone: e.target.value })}
+                    placeholder="VD: 0901234567"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Địa chỉ giao hàng</Label>
+                <Input
+                  value={orderForm.customerAddress}
+                  onChange={(e) => setOrderForm({ ...orderForm, customerAddress: e.target.value })}
+                  placeholder="VD: Số 1, Đường ABC, Quận X, TP Y"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Ghi chú</Label>
+                <Textarea
+                  value={orderForm.notes}
+                  onChange={(e) => setOrderForm({ ...orderForm, notes: e.target.value })}
+                  placeholder="Ghi chú đơn hàng (không bắt buộc)"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {/* Order Items */}
+            <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Package className="w-4 h-4 text-emerald-600" />
+                Sản phẩm
+              </h3>
+
+              {orderItems.length > 0 && (
+                <div className="space-y-2">
+                  {orderItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-white rounded-md p-2 text-sm">
+                      <span className="font-medium flex-1">{item.productName}</span>
+                      <span className="text-muted-foreground">&times; {item.quantity}</span>
+                      <span className="text-muted-foreground">{formatPrice(item.unitPrice)}</span>
+                      <span className="font-medium w-28 text-right">{formatPrice(item.unitPrice * item.quantity)}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-red-500 hover:text-red-600"
+                        onClick={() => removeOrderItem(idx)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Label className="text-xs">Sản phẩm</Label>
+                  <Select
+                    value={newOrderItem.productId}
+                    onValueChange={(v) => setNewOrderItem({ ...newOrderItem, productId: v })}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Chọn sản phẩm..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products
+                        .filter((p) => p.isActive && p.stockQuantity > 0)
+                        .map((p) => {
+                          const reserved = reservedStockMap[p.id] || 0
+                          const available = p.stockQuantity - reserved
+                          return (
+                            <SelectItem key={p.id} value={p.id} disabled={available <= 0}>
+                              {p.name} - {formatPrice(p.price)} (còn: {available})
+                            </SelectItem>
+                          )
+                        })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-24">
+                  <Label className="text-xs">Số lượng</Label>
+                  <Input
+                    type="number"
+                    className="h-9 text-sm"
+                    value={newOrderItem.quantity}
+                    onChange={(e) => setNewOrderItem({ ...newOrderItem, quantity: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9"
+                  onClick={addOrderItem}
+                  disabled={!newOrderItem.productId || !newOrderItem.quantity}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Thêm
+                </Button>
+              </div>
+            </div>
+
+            {/* Order Total */}
+            {orderItems.length > 0 && (
+              <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <span className="font-semibold text-emerald-800">TỔNG TIỀN</span>
+                <span className="font-bold text-emerald-700 text-xl">{formatPrice(orderTotal)}</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOrderDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              onClick={saveOrder}
+              disabled={saving || !orderForm.customerName || orderItems.length === 0}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
+              <ShoppingCart className="w-4 h-4 mr-1" />
+              Tạo đơn hàng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Order Detail Dialog */}
+      <Dialog open={orderDetailDialogOpen} onOpenChange={setOrderDetailDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-purple-500" />
+              Chi tiết đơn hàng
+            </DialogTitle>
+            <DialogDescription>Mã: {selectedOrder?.id?.substring(0, 8)}...</DialogDescription>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                <Badge className={ORDER_STATUS_COLORS[selectedOrder.status] || ''}>
+                  {ORDER_STATUS_LABELS[selectedOrder.status] || selectedOrder.status}
+                </Badge>
+                <span className="text-xs text-muted-foreground">{formatDate(selectedOrder.createdAt)}</span>
+              </div>
+
+              {/* Customer Info */}
+              <div className="border rounded-lg p-3 bg-gray-50 space-y-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium">{selectedOrder.customerName}</span>
+                </div>
+                {selectedOrder.customerPhone && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="w-4 h-4" />
+                    <span>{selectedOrder.customerPhone}</span>
+                  </div>
+                )}
+                {selectedOrder.customerAddress && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    <span>{selectedOrder.customerAddress}</span>
+                  </div>
+                )}
+                {selectedOrder.notes && (
+                  <p className="text-xs text-muted-foreground mt-1">Ghi chú: {selectedOrder.notes}</p>
+                )}
+              </div>
+
+              {/* Order Items */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Sản phẩm</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sản phẩm</TableHead>
+                      <TableHead className="text-center">SL</TableHead>
+                      <TableHead className="text-right">Đơn giá</TableHead>
+                      <TableHead className="text-right">Thành tiền</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(selectedOrder.orderItems || []).map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.productName}</TableCell>
+                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-right">{formatPrice(item.unitPrice)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatPrice(item.unitPrice * item.quantity)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="flex justify-end mt-2 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <span className="font-bold text-emerald-700 text-lg">
+                    Tổng: {formatPrice(selectedOrder.totalAmount)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              {selectedOrder.status === 'pending' && (
+                <div className="flex items-center gap-2 pt-2">
+                  <Button
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    disabled={saving}
+                    onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
+                  >
+                    {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    Xác nhận hoàn thành
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    disabled={saving}
+                    onClick={() => {
+                      if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+                        updateOrderStatus(selectedOrder.id, 'cancelled')
+                      }
+                    }}
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Hủy đơn
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
