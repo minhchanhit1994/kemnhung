@@ -75,11 +75,11 @@ export async function POST(request: NextRequest) {
     const orderData = {
       id: orderId,
       customer_name: customerName,
-      customer_phone: customerPhone || null,
-      customer_address: customerAddress || null,
+      customer_phone: customerPhone || '',
+      customer_address: customerAddress || '',
       total_amount: totalAmount,
       status: 'pending',
-      notes: notes || null,
+      notes: notes || '',
       created_at: now,
       updated_at: now,
     }

@@ -5,16 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Shield, LogIn, Loader2 } from 'lucide-react'
+import { Shield, LogIn, Loader2, X } from 'lucide-react'
 import AdminPanel from '@/components/admin-panel'
+import ShopHomepage from '@/components/shop-homepage'
+
+type View = 'shop' | 'admin'
 
 export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [view, setView] = useState<View>('shop')
   const [username, setUsername] = useState('')
   const [loginUsername, setLoginUsername] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [loginError, setLoginError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loginLoading, setLoginLoading] = useState(false)
+  const [showLoginDialog, setShowLoginDialog] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -28,7 +32,6 @@ export default function Home() {
         if (data.username && data.token) {
           startTransition(() => {
             setUsername(data.username)
-            setIsLoggedIn(true)
           })
         }
       } catch {
@@ -41,7 +44,7 @@ export default function Home() {
     e.preventDefault()
     if (!loginUsername || !loginPassword) return
 
-    setLoading(true)
+    setLoginLoading(true)
     setLoginError('')
 
     try {
@@ -60,7 +63,11 @@ export default function Home() {
         }))
         startTransition(() => {
           setUsername(data.admin.username)
-          setIsLoggedIn(true)
+          setView('admin')
+          setShowLoginDialog(false)
+          setLoginUsername('')
+          setLoginPassword('')
+          setLoginError('')
         })
       } else {
         setLoginError(data.error || 'Đăng nhập thất bại')
@@ -68,16 +75,20 @@ export default function Home() {
     } catch {
       setLoginError('Lỗi kết nối, vui lòng thử lại')
     } finally {
-      setLoading(false)
+      setLoginLoading(false)
     }
   }
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('kn_admin')
     startTransition(() => {
-      setIsLoggedIn(false)
       setUsername('')
+      setView('shop')
     })
+  }, [])
+
+  const handleBackToShop = useCallback(() => {
+    setView('shop')
   }, [])
 
   const handleChangePassword = useCallback(async () => {
@@ -106,88 +117,108 @@ export default function Home() {
     }
   }, [])
 
-  // Show loading during hydration
+  const openLoginDialog = () => {
+    setLoginUsername('')
+    setLoginPassword('')
+    setLoginError('')
+    setShowLoginDialog(true)
+  }
+
+  // Loading state during hydration
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
       </div>
     )
   }
 
-  if (isPending && isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-      </div>
-    )
-  }
-
-  if (isLoggedIn) {
+  // Show admin panel
+  if (view === 'admin' && username) {
     return (
       <AdminPanel
         username={username}
         onLogout={handleLogout}
-        onBack={handleLogout}
+        onBack={handleBackToShop}
         onChangePassword={handleChangePassword}
       />
     )
   }
 
-  // Login page
+  // Public shop view
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-sm shadow-lg">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
-            <Shield className="w-8 h-8 text-emerald-600" />
-          </div>
-          <CardTitle className="text-xl">Kẽm Nhung</CardTitle>
-          <CardDescription>Đăng nhập để quản lý cửa hàng</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Label htmlFor="username">Tên đăng nhập</Label>
-              <Input
-                id="username"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder="admin"
-                disabled={loading}
-                autoComplete="username"
-              />
-            </div>
-            <div>
-              <Label htmlFor="password">Mật khẩu</Label>
-              <Input
-                id="password"
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="••••••"
-                disabled={loading}
-                autoComplete="current-password"
-              />
-            </div>
-            {loginError && (
-              <p className="text-sm text-red-600">{loginError}</p>
-            )}
-            <Button
-              type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
-              disabled={loading || !loginUsername || !loginPassword}
-            >
-              {loading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <LogIn className="w-4 h-4 mr-2" />
-              )}
-              Đăng nhập
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      <ShopHomepage onAdminClick={openLoginDialog} />
+
+      {/* === Admin Login Dialog === */}
+      {showLoginDialog && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowLoginDialog(false)}
+        >
+          <Card
+            className="w-full max-w-sm shadow-2xl border-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardHeader className="text-center relative pb-2">
+              <button
+                onClick={() => setShowLoginDialog(false)}
+                className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+              <div className="mx-auto w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
+                <Shield className="w-7 h-7 text-emerald-600" />
+              </div>
+              <CardTitle className="text-xl">Quản trị Kẽm Nhung</CardTitle>
+              <CardDescription>Đăng nhập để quản lý cửa hàng</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <Label htmlFor="login-username">Tên đăng nhập</Label>
+                  <Input
+                    id="login-username"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    placeholder="admin"
+                    disabled={loginLoading}
+                    autoComplete="username"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="login-password">Mật khẩu</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••"
+                    disabled={loginLoading}
+                    autoComplete="current-password"
+                  />
+                </div>
+                {loginError && (
+                  <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{loginError}</p>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  disabled={loginLoading || !loginUsername || !loginPassword}
+                >
+                  {loginLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <LogIn className="w-4 h-4 mr-2" />
+                  )}
+                  Đăng nhập
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </>
   )
 }
