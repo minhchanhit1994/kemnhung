@@ -72,6 +72,7 @@ import {
   Store,
   MessageCircle,
   Loader2,
+  Printer,
 } from 'lucide-react'
 import {
   BarChart,
@@ -767,6 +768,143 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const viewOrderDetail = (order: Order & { orderItems?: OrderItem[] }) => {
     setSelectedOrder(order)
     setOrderDetailDialogOpen(true)
+  }
+
+  // === Print Invoice ===
+  const printInvoice = (order: Order & { orderItems?: OrderItem[] }) => {
+    const shopName = shopInfo?.shopName || 'Kẽm Nhung'
+    const shopPhone = shopInfo?.phone || ''
+    const shopAddress = shopInfo?.address || ''
+    const now = new Date()
+    const invoiceDate = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const invoiceTime = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    const orderDate = new Date(order.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const orderId = order.id.substring(0, 8).toUpperCase()
+    const items = order.orderItems || []
+
+    const html = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Hóa đơn bán lẻ - ${orderId}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1a1a1a; padding: 20px; }
+  .invoice { max-width: 350px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; }
+  .header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 12px; margin-bottom: 12px; }
+  .header h1 { font-size: 18px; color: #059669; margin-bottom: 2px; }
+  .header p { font-size: 11px; color: #666; }
+  .header .shop-info { margin-top: 6px; font-size: 11px; color: #555; }
+  .title-row { text-align: center; margin-bottom: 10px; }
+  .title-row h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; margin-bottom: 10px; border: 1px solid #eee; padding: 8px; border-radius: 4px; }
+  .info-grid .label { color: #888; }
+  .info-grid .value { font-weight: 500; }
+  .customer-info { font-size: 11px; margin-bottom: 10px; border: 1px solid #eee; padding: 8px; border-radius: 4px; }
+  .customer-info .label { color: #888; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+  th { background: #f0fdf4; color: #059669; padding: 6px 4px; text-align: left; font-weight: 600; border-bottom: 1px solid #ddd; font-size: 10px; }
+  td { padding: 5px 4px; border-bottom: 1px dotted #eee; vertical-align: top; }
+  td:last-child { text-align: right; }
+  .total-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; margin-bottom: 10px; }
+  .total-row .total-label { font-size: 12px; font-weight: 600; color: #059669; }
+  .total-row .total-value { font-size: 18px; font-weight: 800; color: #059669; }
+  .amount-words { text-align: center; font-size: 11px; font-style: italic; color: #666; margin-bottom: 10px; padding: 6px; background: #fefce8; border: 1px solid #fef08a; border-radius: 4px; }
+  .footer { text-align: center; font-size: 10px; color: #999; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 10px; }
+  .thank-you { text-align: center; font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 8px; }
+  @media print {
+    body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .invoice { border: none; padding: 0; }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="invoice">
+    <div class="header">
+      <h1>${shopName}</h1>
+      ${shopAddress ? `<p>${shopAddress}</p>` : ''}
+      ${shopPhone ? `<p>ĐT: ${shopPhone}</p>` : ''}
+    </div>
+    <div class="title-row"><h2>Hóa đơn bán lẻ</h2></div>
+    <div class="info-grid">
+      <div><span class="label">Mã HD: </span><span class="value">${orderId}</span></div>
+      <div><span class="label">Ngày: </span><span class="value">${invoiceDate}</span></div>
+      <div><span class="label">Ngày ĐH: </span><span class="value">${orderDate}</span></div>
+      <div><span class="label">Giờ: </span><span class="value">${invoiceTime}</span></div>
+    </div>
+    <div class="customer-info">
+      <div><span class="label">Khách hàng: </span><strong>${order.customerName || '—'}</strong></div>
+      ${order.customerPhone ? `<div><span class="label">SĐT: </span>${order.customerPhone}</div>` : ''}
+      ${order.customerAddress ? `<div><span class="label">Địa chỉ: </span>${order.customerAddress}</div>` : ''}
+    </div>
+    <table>
+      <thead><tr><th>STT</th><th>Sản phẩm</th><th>SL</th><th>Đơn giá</th><th>TT</th></tr></thead>
+      <tbody>
+        ${items.map((item, i) => `<tr><td>${i + 1}</td><td>${item.productName}</td><td style="text-align:center">${item.quantity}</td><td style="text-align:right">${new Intl.NumberFormat('vi-VN').format(item.unitPrice)}</td><td style="text-align:right">${new Intl.NumberFormat('vi-VN').format(item.unitPrice * item.quantity)}</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="total-row">
+      <span class="total-label">TỔNG CỘNG:</span>
+      <span class="total-value">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount)}</span>
+    </div>
+    <div class="amount-words">Bằng chữ: ${numberToVietnameseWords(order.totalAmount)}</div>
+    <div class="thank-you">Cảm ơn quý khách đã ủng hộ!</div>
+    <div class="footer">
+      ${shopName} &bull; ${shopPhone || ''}<br>
+      Hóa đơn được tạo lúc ${invoiceTime} ngày ${invoiceDate}
+    </div>
+  </div>
+  <div class="no-print" style="text-align:center;margin-top:16px;">
+    <button onclick="window.print()" style="padding:10px 30px;font-size:14px;background:#059669;color:white;border:none;border-radius:8px;cursor:pointer;">🖨️ In hóa đơn</button>
+  </div>
+</body>
+</html>`
+
+    const printWindow = window.open('', '_blank', 'width=400,height=700')
+    if (printWindow) {
+      printWindow.document.write(html)
+      printWindow.document.close()
+    }
+  }
+
+  const numberToVietnameseWords = (num: number): string => {
+    if (num === 0) return 'không đồng'
+    const units = ['', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín']
+    const tiers = ['', 'ngàn', 'triệu', 'tỷ']
+    let result = ''
+    let tierIndex = 0
+    let n = Math.floor(num)
+    while (n > 0) {
+      const chunk = n % 1000
+      n = Math.floor(n / 1000)
+      if (chunk > 0) {
+        let chunkText = ''
+        const hundreds = Math.floor(chunk / 100)
+        const remainder = chunk % 100
+        if (hundreds > 0) chunkText += units[hundreds] + ' trăm'
+        if (remainder > 0) {
+          if (hundreds > 0 && remainder < 10) chunkText += ' lẻ'
+          const tens = Math.floor(remainder / 10)
+          const ones = remainder % 10
+          if (tens > 1) {
+            chunkText += ' ' + units[tens] + ' mươi'
+            if (ones === 1) chunkText += ' mốt'
+            else if (ones === 5) chunkText += ' lăm'
+            else if (ones > 0) chunkText += ' ' + units[ones]
+          } else if (tens === 1) {
+            chunkText += ' mười'
+            if (ones === 5) chunkText += ' lăm'
+            else if (ones > 0) chunkText += ' ' + units[ones]
+          } else {
+            chunkText += ' ' + units[ones]
+          }
+        }
+        result = chunkText.trim() + ' ' + tiers[tierIndex] + (result ? ' ' + result : '')
+      }
+      tierIndex++
+    }
+    return result.trim().charAt(0).toUpperCase() + result.trim().slice(1) + ' đồng'
   }
 
   // === Settings ===
@@ -1614,15 +1752,17 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                         size="icon"
                                         variant="ghost"
                                         className="text-green-600 hover:text-green-700"
+                                        disabled={saving}
                                         onClick={() => updateOrderStatus(order.id, 'completed')}
                                         title="Xác nhận hoàn thành"
                                       >
-                                        <CheckCircle2 className="w-4 h-4" />
+                                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                       </Button>
                                       <Button
                                         size="icon"
                                         variant="ghost"
                                         className="text-red-500 hover:text-red-600"
+                                        disabled={saving}
                                         onClick={() => {
                                           if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
                                             updateOrderStatus(order.id, 'cancelled')
@@ -1630,7 +1770,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                         }}
                                         title="Hủy đơn hàng"
                                       >
-                                        <XCircle className="w-4 h-4" />
+                                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                                       </Button>
                                     </>
                                   )}
@@ -2376,6 +2516,16 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </div>
               </div>
 
+              {/* Print Invoice Button */}
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => printInvoice(selectedOrder)}
+              >
+                <Printer className="w-4 h-4" />
+                In hóa đơn bán lẻ
+              </Button>
+
               {/* Actions */}
               {selectedOrder.status === 'pending' && (
                 <div className="flex items-center gap-2 pt-2">
@@ -2384,9 +2534,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                     disabled={saving}
                     onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
                   >
-                    {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
-                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                    Xác nhận hoàn thành
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                    {saving ? 'Đang xử lý...' : 'Xác nhận hoàn thành'}
                   </Button>
                   <Button
                     variant="destructive"
@@ -2397,8 +2546,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       }
                     }}
                   >
-                    <XCircle className="w-4 h-4 mr-1" />
-                    Hủy đơn
+                    {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
+                    {saving ? 'Đang xử lý...' : 'Hủy đơn'}
                   </Button>
                 </div>
               )}
