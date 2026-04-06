@@ -1751,15 +1751,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                       <Button
                                         size="icon"
                                         variant="ghost"
-                                        className="text-emerald-600 hover:text-emerald-700"
-                                        onClick={() => printInvoice(order)}
-                                        title="In hóa đơn bán lẻ"
-                                      >
-                                        <Printer className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
                                         className="text-green-600 hover:text-green-700"
                                         disabled={saving}
                                         onClick={() => updateOrderStatus(order.id, 'completed')}
