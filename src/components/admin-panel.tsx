@@ -1751,6 +1751,15 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                       <Button
                                         size="icon"
                                         variant="ghost"
+                                        className="text-emerald-600 hover:text-emerald-700"
+                                        onClick={() => printInvoice(order)}
+                                        title="In hóa đơn bán lẻ"
+                                      >
+                                        <Printer className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
                                         className="text-green-600 hover:text-green-700"
                                         disabled={saving}
                                         onClick={() => updateOrderStatus(order.id, 'completed')}
@@ -2516,17 +2525,21 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </div>
               </div>
 
-              {/* Print Invoice Button */}
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => printInvoice(selectedOrder)}
-              >
-                <Printer className="w-4 h-4" />
-                In hóa đơn bán lẻ
-              </Button>
-
               {/* Actions */}
+              {selectedOrder.status === 'pending' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    onClick={() => printInvoice(selectedOrder)}
+                  >
+                    <Printer className="w-4 h-4" />
+                    In hóa đơn
+                  </Button>
+                </div>
+              )}
+
+              {/* Complete / Cancel */}
               {selectedOrder.status === 'pending' && (
                 <div className="flex items-center gap-2 pt-2">
                   <Button
