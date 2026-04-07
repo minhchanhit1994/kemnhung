@@ -118,7 +118,7 @@ interface DashboardStats {
   monthlyFinance: { month: string; revenue: number; capital: number; profit: number }[]
 }
 
-const MATERIAL_UNITS = ['cái', 'kg', 'm', 'l', 'cuộn', 'tấm', 'bộ', 'hộp', 'chiếc']
+const MATERIAL_UNITS = ['cái', 'gam', 'cm', 'm', 'l', 'cuộn', 'tấm', 'bộ', 'hộp', 'chiếc']
 
 const PRODUCTION_STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
