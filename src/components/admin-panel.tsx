@@ -197,6 +197,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const [materialForm, setMaterialForm] = useState({ name: '', unit: 'cái', description: '', minStock: '10' })
 
   const [importForm, setImportForm] = useState({ materialId: '', quantity: '', totalPrice: '', source: '', notes: '' })
+  const [importSearch, setImportSearch] = useState('')
+  const [importDropdownOpen, setImportDropdownOpen] = useState(false)
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [productForm, setProductForm] = useState({
@@ -412,6 +414,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   // === Import Handler ===
   const openImportDialog = () => {
     setImportForm({ materialId: '', quantity: '', totalPrice: '', source: '', notes: '' })
+    setImportSearch('')
+    setImportDropdownOpen(false)
     setImportDialogOpen(true)
   }
 
@@ -1863,18 +1867,67 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
           <div className="space-y-4">
             <div>
               <Label>Chọn nguyên liệu</Label>
-              <Select value={importForm.materialId} onValueChange={(v) => setImportForm({ ...importForm, materialId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn nguyên liệu..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {rawMaterials.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name} (hiện có: {m.currentStock} {m.unit})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Gõ để tìm nguyên liệu..."
+                    value={importForm.materialId
+                      ? rawMaterials.find(m => m.id === importForm.materialId)?.name || ''
+                      : importSearch
+                    }
+                    onChange={(e) => {
+                      setImportSearch(e.target.value)
+                      setImportForm(prev => ({ ...prev, materialId: '' }))
+                      setImportDropdownOpen(true)
+                    }}
+                    onFocus={() => setImportDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setImportDropdownOpen(false), 200)}
+                    className="pl-9 pr-8"
+                  />
+                  {importForm.materialId && (
+                    <button
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        setImportForm(prev => ({ ...prev, materialId: '' }))
+                        setImportSearch('')
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                {importDropdownOpen && !importForm.materialId && (
+                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md">
+                    {(() => {
+                      const q = importSearch.toLowerCase().trim()
+                      const filtered = q
+                        ? rawMaterials.filter(m => m.name.toLowerCase().includes(q))
+                        : rawMaterials
+                      if (filtered.length === 0) {
+                        return <div className="p-3 text-sm text-muted-foreground text-center">Không tìm thấy nguyên liệu</div>
+                      }
+                      return filtered.map((m) => (
+                        <button
+                          key={m.id}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between ${m.currentStock <= m.minStock && m.minStock > 0 ? 'border-l-2 border-l-orange-400' : ''}`}
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            setImportForm(prev => ({ ...prev, materialId: m.id }))
+                            setImportDropdownOpen(false)
+                          }}
+                        >
+                          <span className="font-medium">{m.name}</span>
+                          <span className="text-xs text-muted-foreground ml-2 shrink-0">
+                            {m.currentStock} {m.unit}
+                            {m.currentStock <= m.minStock && m.minStock > 0 && <span className="text-orange-500 ml-1">⚠️</span>}
+                          </span>
+                        </button>
+                      ))
+                    })()}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <Label>Số lượng</Label>
