@@ -1808,8 +1808,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <Input
                 value={materialForm.name}
                 onChange={(e) => setMaterialForm({ ...materialForm, name: e.target.value })}
-                placeholder="VD: Dây thừng, Vải canvas..."
               />
+              <p className="text-xs text-muted-foreground mt-1">VD: Dây thừng, Vải canvas, Dây xích...</p>
             </div>
             <div>
               <Label>Đơn vị</Label>
@@ -1831,9 +1831,9 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <Textarea
                 value={materialForm.description}
                 onChange={(e) => setMaterialForm({ ...materialForm, description: e.target.value })}
-                placeholder="Mô tả thêm (không bắt buộc)"
                 rows={2}
               />
+              <p className="text-xs text-muted-foreground mt-1">Mô tả thêm (không bắt buộc)</p>
             </div>
             <div>
               <Label>Mức cảnh báo (tồn kho tối thiểu)</Label>
@@ -1841,8 +1841,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 type="number"
                 value={materialForm.minStock}
                 onChange={(e) => setMaterialForm({ ...materialForm, minStock: e.target.value })}
-                placeholder="VD: 10"
               />
+              <p className="text-xs text-muted-foreground mt-1">VD: 10</p>
             </div>
           </div>
           <DialogFooter>
@@ -1933,37 +1933,38 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <Label>Số lượng</Label>
               <Input
                 type="number"
+                step="any"
                 value={importForm.quantity}
                 onChange={(e) => setImportForm({ ...importForm, quantity: e.target.value })}
-                placeholder="VD: 100"
               />
+              <p className="text-xs text-muted-foreground mt-1">VD: 100</p>
             </div>
             <div>
               <Label>Tổng tiền (VNĐ)</Label>
               <Input
                 type="number"
+                step="any"
                 value={importForm.totalPrice}
                 onChange={(e) => setImportForm({ ...importForm, totalPrice: e.target.value })}
-                placeholder="VD: 500000"
               />
+              <p className="text-xs text-muted-foreground mt-1">VD: 500000</p>
             </div>
             <div>
               <Label>Nguồn nhập hàng</Label>
               <Input
                 value={importForm.source}
                 onChange={(e) => setImportForm({ ...importForm, source: e.target.value })}
-                placeholder="VD: Shop ABC trên Shopee, link SP..."
               />
-              <p className="text-xs text-muted-foreground mt-1">Tên shop, người bán hoặc link sản phẩm để tra cứu lại</p>
+              <p className="text-xs text-muted-foreground mt-1">Tên shop, người bán hoặc link sản phẩm để tra cứu lại. VD: Shop ABC trên Shopee</p>
             </div>
             <div>
               <Label>Ghi chú</Label>
               <Textarea
                 value={importForm.notes}
                 onChange={(e) => setImportForm({ ...importForm, notes: e.target.value })}
-                placeholder="Ghi chú (không bắt buộc)"
                 rows={2}
               />
+              <p className="text-xs text-muted-foreground mt-1">Ghi chú (không bắt buộc)</p>
             </div>
             {importForm.quantity && importForm.totalPrice && Number(importForm.quantity) > 0 && (
               <div className="bg-gray-50 rounded-md p-3 text-sm text-muted-foreground">
@@ -2006,8 +2007,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 <Input
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  placeholder="VD: Túi tote vải canvas"
                 />
+                <p className="text-xs text-muted-foreground mt-1">VD: Túi tote vải canvas</p>
               </div>
               <div>
                 <Label>Đơn vị</Label>
@@ -2030,19 +2031,20 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <Textarea
                 value={productForm.description}
                 onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                placeholder="Mô tả sản phẩm (không bắt buộc)"
                 rows={2}
               />
+              <p className="text-xs text-muted-foreground mt-1">Mô tả sản phẩm (không bắt buộc)</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Giá bán (VNĐ)</Label>
                 <Input
                   type="number"
+                  step="any"
                   value={productForm.price}
                   onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
-                  placeholder="VD: 150000"
                 />
+                <p className="text-xs text-muted-foreground mt-1">VD: 150000</p>
               </div>
               <div className="flex items-end">
                 <div className="flex items-center space-x-2">
@@ -2207,10 +2209,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                   <Label className="text-xs">Số lượng</Label>
                   <Input
                     type="number"
+                    step="any"
                     className="h-9 text-sm"
                     value={newRecipeMaterial.quantity}
                     onChange={(e) => setNewRecipeMaterial({ ...newRecipeMaterial, quantity: e.target.value })}
-                    placeholder="0"
                   />
                 </div>
                 <Button
@@ -2275,10 +2277,11 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <Label>Số lượng sản xuất</Label>
               <Input
                 type="number"
+                step="any"
                 value={productionForm.quantity}
                 onChange={(e) => setProductionForm({ ...productionForm, quantity: e.target.value })}
-                placeholder="VD: 10"
               />
+              <p className="text-xs text-muted-foreground mt-1">VD: 10</p>
             </div>
 
             {selectedProductionRecipe.length > 0 && Number(productionForm.quantity) > 0 && (
@@ -2315,9 +2318,9 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <Textarea
                 value={productionForm.notes}
                 onChange={(e) => setProductionForm({ ...productionForm, notes: e.target.value })}
-                placeholder="Ghi chú (không bắt buộc)"
                 rows={2}
               />
+              <p className="text-xs text-muted-foreground mt-1">Ghi chú (không bắt buộc)</p>
             </div>
           </div>
           <DialogFooter>
@@ -2362,16 +2365,16 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                   <Input
                     value={orderForm.customerName}
                     onChange={(e) => setOrderForm({ ...orderForm, customerName: e.target.value })}
-                    placeholder="VD: Nguyễn Văn A"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">VD: Nguyễn Văn A</p>
                 </div>
                 <div>
                   <Label className="text-xs">Số điện thoại</Label>
                   <Input
                     value={orderForm.customerPhone}
                     onChange={(e) => setOrderForm({ ...orderForm, customerPhone: e.target.value })}
-                    placeholder="VD: 0901234567"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">VD: 0901234567</p>
                 </div>
               </div>
               <div>
@@ -2379,17 +2382,17 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 <Input
                   value={orderForm.customerAddress}
                   onChange={(e) => setOrderForm({ ...orderForm, customerAddress: e.target.value })}
-                  placeholder="VD: Số 1, Đường ABC, Quận X, TP Y"
                 />
+                <p className="text-xs text-muted-foreground mt-1">VD: Số 1, Đường ABC, Quận X, TP Y</p>
               </div>
               <div>
                 <Label className="text-xs">Ghi chú</Label>
                 <Textarea
                   value={orderForm.notes}
                   onChange={(e) => setOrderForm({ ...orderForm, notes: e.target.value })}
-                  placeholder="Ghi chú đơn hàng (không bắt buộc)"
                   rows={2}
                 />
+                <p className="text-xs text-muted-foreground mt-1">Ghi chú đơn hàng (không bắt buộc)</p>
               </div>
             </div>
 
@@ -2451,10 +2454,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                   <Label className="text-xs">Số lượng</Label>
                   <Input
                     type="number"
+                    step="any"
                     className="h-9 text-sm"
                     value={newOrderItem.quantity}
                     onChange={(e) => setNewOrderItem({ ...newOrderItem, quantity: e.target.value })}
-                    placeholder="0"
                   />
                 </div>
                 <Button
@@ -2636,11 +2639,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       id="shop-name"
                       value={settingsForm.shopName}
                       onChange={(e) => setSettingsForm({ ...settingsForm, shopName: e.target.value })}
-                      placeholder="Kẽm Nhung"
                       disabled={settingsSaving}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Hiển thị trên trang chủ, header và footer
+                      Hiển thị trên trang chủ, header và footer. VD: Kẽm Nhung
                     </p>
                   </div>
 
@@ -2653,11 +2655,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       id="shop-phone"
                       value={settingsForm.phone}
                       onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
-                      placeholder="0912345678"
                       disabled={settingsSaving}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Hiển thị ở footer. Dùng làm liên hệ Zalo nếu không có số Zalo riêng.
+                      Hiển thị ở footer. VD: 0912345678
                     </p>
                   </div>
 
@@ -2670,11 +2671,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       id="shop-zalo"
                       value={settingsForm.zalo}
                       onChange={(e) => setSettingsForm({ ...settingsForm, zalo: e.target.value })}
-                      placeholder="0912345678"
                       disabled={settingsSaving}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Khách hàng click &quot;Liên hệ đặt hàng&quot; sẽ mở khung chat Zalo với số này. Nếu để trống sẽ dùng số điện thoại.
+                      Khách click &quot;Liên hệ đặt hàng&quot; sẽ mở chat Zalo. VD: 0912345678
                     </p>
                   </div>
 
@@ -2687,9 +2687,11 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       id="shop-address"
                       value={settingsForm.address}
                       onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
-                      placeholder="Địa chỉ của bạn..."
                       disabled={settingsSaving}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Hiển thị trên trang chủ. VD: Số 1, Đường ABC, Quận X
+                    </p>
                   </div>
 
                   {shopInfo && (
