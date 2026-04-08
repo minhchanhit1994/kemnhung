@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime']
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50MB
 
 function getExtension(mimeType: string): string {
@@ -51,25 +51,26 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     let buffer = Buffer.from(bytes)
 
-    // Only process images with sharp (resize to max 400x400)
+    // Only process images with sharp (resize to max 1200x1200, high quality)
     if (isImage) {
       try {
         const sharp = (await import('sharp')).default
+        const isWebP = file.type === 'image/webp'
         buffer = await sharp(buffer)
-          .resize(400, 400, {
+          .resize(1200, 1200, {
             fit: 'inside',
             withoutEnlargement: true,
           })
-          .jpeg({ quality: 85 })
+          [isWebP ? 'webp' : 'jpeg']({ quality: 90 })
           .toBuffer()
-        // After sharp processing, content type is always image/jpeg
-        // so we use .jpg extension
-        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.jpg`
+        const ext = isWebP ? '.webp' : '.jpg'
+        const contentType = isWebP ? 'image/webp' : 'image/jpeg'
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`
 
         const { data, error } = await supabase.storage
           .from('product-images')
           .upload(uniqueName, buffer, {
-            contentType: 'image/jpeg',
+            contentType,
             upsert: true,
           })
 

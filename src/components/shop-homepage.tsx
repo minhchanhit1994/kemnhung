@@ -108,8 +108,8 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             )}
           </h1>
           <p className="text-lg md:text-xl text-emerald-100 max-w-2xl mx-auto mb-8 leading-relaxed">
-            Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật
-            được chế tác tỉ mỉ bằng tay.
+            Mỗi sản phẩm là một tác phẩm nghệ thuật
+            được chế tác tỉ mỉ bằng tay, dành riêng cho bạn.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a href="#products" className="inline-flex items-center justify-center gap-2 bg-amber-400 hover:bg-amber-300 text-emerald-900 font-semibold px-8 py-3 rounded-full transition-colors">
@@ -234,7 +234,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 <span className="text-amber-400">{shopNameParts}</span>
               )}
             </h3>
-            <p className="text-sm mb-4">Trang sức handmade - Mỗi sản phẩm là một câu chuyện</p>
+            <p className="text-sm mb-4">Trang sức handmade tinh xảo – Được chế tác riêng cho bạn</p>
             {displayPhone && (
               <div className="flex items-center justify-center gap-4 text-sm mb-2">
                 <a
