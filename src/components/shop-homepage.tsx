@@ -152,9 +152,30 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
 
   const zaloNumber = shopInfo.zalo || shopInfo.phone
   const zaloClean = zaloNumber ? zaloNumber.replace(/^0/, '') : ''
-  // Use zalo.me link - let browser/OS handle app redirect naturally
-  const zaloLink = zaloClean ? `https://zalo.me/${zaloClean}` : null
+  // Web link for desktop
+  const zaloWebLink = zaloClean ? `https://zalo.me/${zaloClean}` : null
+  // Deep link for mobile - bypasses Zalo server redirect that causes double slash issue
+  const zaloDeepLink = zaloClean ? `zalo://qr/link/${zaloClean}` : null
   const displayPhone = shopInfo.phone || shopInfo.zalo || ''
+
+  // On mobile: use zalo:// deep link directly to avoid http://zalo//qr/link/ redirect issue
+  // On desktop: use https://zalo.me/ which opens Zalo web
+  const handleZaloClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!zaloDeepLink || !zaloWebLink) return
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      e.preventDefault()
+      window.location.href = zaloDeepLink
+      // Fallback to web if app not installed
+      const timer = setTimeout(() => {
+        if (!document.hidden) {
+          window.location.href = zaloWebLink
+        }
+      }, 2500)
+      // Clean up timer if app opened successfully
+      window.addEventListener('blur', () => clearTimeout(timer), { once: true })
+    }
+  }, [zaloDeepLink, zaloWebLink])
 
   const shopNameParts = shopInfo.shopName || 'Kẽm Nhung'
   const nameWords = shopNameParts.trim().split(/\s+/)
@@ -236,8 +257,8 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <ShoppingBag className="w-5 h-5" />
               Xem sản phẩm
             </a>
-            {zaloLink ? (
-              <a href={zaloLink} className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
+            {zaloWebLink ? (
+              <a href={zaloWebLink} onClick={handleZaloClick} className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </a>
@@ -362,7 +383,8 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             {displayPhone && (
               <div className="flex items-center justify-center gap-4 text-sm mb-2">
                 <a
-                  href={zaloLink || '#'}
+                  href={zaloWebLink || '#'}
+                  onClick={handleZaloClick}
                   className="flex items-center gap-1.5 hover:text-tan transition-colors"
                 >
                   <Phone className="w-4 h-4" />
@@ -462,9 +484,10 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 </Badge>
               </div>
 
-              {zaloLink ? (
+              {zaloWebLink ? (
                 <a
-                  href={zaloLink}
+                  href={zaloWebLink}
+                  onClick={handleZaloClick}
                   className="flex items-center justify-center gap-2 w-full bg-forest hover:bg-forest-dark text-white font-semibold py-3 rounded-xl transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" />
