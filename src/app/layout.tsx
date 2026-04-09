@@ -14,23 +14,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quà tặng kẽm nhung",
-  description: "Quà tặng kẽm nhung - Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
-  keywords: ["Quà tặng kẽm nhung", "trang sức", "handmade", "jewelry", "trang sức handmade", "phụ kiện", "đồ handmade"],
-  authors: [{ name: "Kẽm Nhung" }],
+  title: "Mộc Đậu Decor - Trang sức handmade tinh xảo",
+  description: "Mộc Đậu Decor - Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
+  keywords: ["Mộc Đậu Decor", "trang sức", "handmade", "jewelry", "trang sức handmade", "phụ kiện", "đồ handmade", "quà tặng"],
+  authors: [{ name: "Mộc Đậu Decor" }],
   icons: {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "Quà tặng kẽm nhung",
+    title: "Mộc Đậu Decor - Trang sức handmade tinh xảo",
     description: "Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
     url: "https://kemnhung.vercel.app",
-    siteName: "Quà tặng kẽm nhung",
+    siteName: "Mộc Đậu Decor",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Quà tặng kẽm nhung",
+    title: "Mộc Đậu Decor - Trang sức handmade tinh xảo",
     description: "Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
   },
 };

@@ -233,7 +233,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   // === Shop Info ===
   const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null)
   const [settingsForm, setSettingsForm] = useState({
-    shopName: 'Kẽm Nhung',
+    shopName: 'Mộc Đậu Decor',
     phone: '',
     zalo: '',
     address: '',
@@ -329,7 +329,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
         const info = await shopInfoRes.json()
         setShopInfo(info)
         setSettingsForm({
-          shopName: info.shopName || 'Kẽm Nhung',
+          shopName: info.shopName || 'Mộc Đậu Decor',
           phone: info.phone || '',
           zalo: info.zalo || '',
           address: info.address || '',
@@ -939,7 +939,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
 
   // === Print Invoice ===
   const printInvoice = (order: Order & { orderItems?: OrderItem[] }) => {
-    const shopName = shopInfo?.shopName || 'Kẽm Nhung'
+    const shopName = shopInfo?.shopName || 'Mộc Đậu Decor'
     const shopPhone = shopInfo?.phone || ''
     const shopAddress = shopInfo?.address || ''
     const now = new Date()
@@ -3483,7 +3483,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       disabled={settingsSaving}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Hiển thị trên trang chủ, header và footer. VD: Kẽm Nhung
+                      Hiển thị trên trang chủ, header và footer. VD: Mộc Đậu Decor
                     </p>
                   </div>
 
@@ -3539,7 +3539,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                     <div className="bg-gray-50 rounded-xl p-4 border">
                       <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider font-medium">Xem trước</p>
                       <div className="space-y-1 text-sm">
-                        <p><span className="text-muted-foreground">Tên shop:</span> <span className="font-medium">{settingsForm.shopName || 'Kẽm Nhung'}</span></p>
+                        <p><span className="text-muted-foreground">Tên shop:</span> <span className="font-medium">{settingsForm.shopName || 'Mộc Đậu Decor'}</span></p>
                         <p><span className="text-muted-foreground">SĐT:</span> {settingsForm.phone || '—'}</p>
                         <p><span className="text-muted-foreground">Zalo:</span> {settingsForm.zalo || settingsForm.phone ? (
                           <a href={`https://zalo.me/${(settingsForm.zalo || settingsForm.phone).replace(/^0/, '')}`} target="_blank" rel="noopener noreferrer" className="text-forest hover:underline ml-1">Mở chat Zalo</a>

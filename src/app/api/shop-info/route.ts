@@ -21,7 +21,7 @@ export async function GET() {
       const { data: created, error: createError } = await supabase
         .from('shop_info')
         .insert({
-          shop_name: 'Cửa hàng Kẽm Nhung',
+          shop_name: 'Mộc Đậu Decor',
           phone: '',
           zalo: '',
           address: '',
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest) {
       shopInfo = toCamelCase<ShopInfo>(data)
     } else {
       const insertData: Record<string, unknown> = {
-        shop_name: snakeBody.shop_name || 'Cửa hàng Kẽm Nhung',
+        shop_name: snakeBody.shop_name || 'Mộc Đậu Decor',
         phone: snakeBody.phone || '',
         zalo: snakeBody.zalo || '',
         address: snakeBody.address || '',

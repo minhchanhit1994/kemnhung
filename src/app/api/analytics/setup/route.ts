@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-const CREATE_TABLES_SQL = `-- Analytics tables for Kẽm Nhung / Mộc Đậu Decor
+const CREATE_TABLES_SQL = `-- Analytics tables for Mộc Đậu Decor
 -- Run this SQL in Supabase Dashboard → SQL Editor
 
 -- 1. Page views table

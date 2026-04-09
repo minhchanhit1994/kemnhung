@@ -15,7 +15,7 @@ interface ShopHomepageProps {
 
 const DEFAULT_SHOP: ShopInfo = {
   id: '',
-  shopName: 'Kẽm Nhung',
+  shopName: 'Mộc Đậu Decor',
   phone: '',
   zalo: '',
   address: '',
@@ -178,7 +178,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
     }
   }, [zaloDeepLink, zaloWebLink])
 
-  const shopNameParts = shopInfo.shopName || 'Kẽm Nhung'
+  const shopNameParts = shopInfo.shopName || 'Mộc Đậu Decor'
   const nameWords = shopNameParts.trim().split(/\s+/)
   const highlightWord = nameWords.length > 0 ? nameWords[nameWords.length - 1] : ''
 

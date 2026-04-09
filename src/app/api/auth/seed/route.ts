@@ -58,7 +58,7 @@ export async function POST() {
 
     if (!shopInfo || shopInfo.length === 0) {
       await supabase.from('shop_info').insert({
-        shop_name: 'Cửa hàng Kẽm Nhung',
+        shop_name: 'Mộc Đậu Decor',
         phone: '',
         zalo: '',
         address: '',

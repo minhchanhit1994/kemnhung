@@ -152,7 +152,7 @@ export default function BlogPostPage() {
               <img
                 src={post.coverImage}
                 alt={post.title}
-                className="w-full max-h-[400px] object-cover"
+                className="w-full max-h-[600px] object-contain rounded-xl"
               />
             </div>
           )}
