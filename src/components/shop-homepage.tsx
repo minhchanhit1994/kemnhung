@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -32,6 +32,83 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   const [search, setSearch] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
+
+  // === Analytics Session ID ===
+  const sessionId = useMemo(() => {
+    if (typeof window === 'undefined') return ''
+    const ua = navigator.userAgent + (window.screen.width + 'x' + window.screen.height)
+    let hash = 0
+    for (let i = 0; i < ua.length; i++) {
+      const char = ua.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash
+    }
+    return Math.abs(hash).toString(36)
+  }, [])
+
+  const trackedProducts = useRef<Set<string>>(new Set())
+  const trackedSearches = useRef<Map<string, number>>(new Map())
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // === Analytics: Track page view on mount ===
+  useEffect(() => {
+    fetch('/api/analytics/pageview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page: 'home',
+        referrer: document.referrer || '',
+        userAgent: navigator.userAgent,
+        sessionId,
+      }),
+    }).catch(() => {})
+  }, [sessionId])
+
+  // === Analytics: Track product view ===
+  useEffect(() => {
+    if (selectedProduct && !trackedProducts.current.has(selectedProduct.id)) {
+      trackedProducts.current.add(selectedProduct.id)
+      fetch('/api/analytics/product-view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: selectedProduct.id,
+          productName: selectedProduct.name,
+          userAgent: navigator.userAgent,
+          sessionId,
+        }),
+      }).catch(() => {})
+    }
+  }, [selectedProduct, sessionId])
+
+  // === Analytics: Track search (debounced) ===
+  const trackSearch = useCallback((query: string) => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    if (!query.trim()) return
+    searchDebounceRef.current = setTimeout(() => {
+      const lastTracked = trackedSearches.current.get(query.trim().toLowerCase())
+      const now = Date.now()
+      // Don't track same query more than once per 10 seconds
+      if (lastTracked && now - lastTracked < 10000) return
+      trackedSearches.current.set(query.trim().toLowerCase(), now)
+      const resultCount = products.filter((p) =>
+        p.name.toLowerCase().includes(query.toLowerCase())
+      ).length
+      fetch('/api/analytics/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: query.trim(),
+          resultsCount: resultCount,
+          sessionId,
+        }),
+      }).catch(() => {})
+    }, 800)
+  }, [products, sessionId])
+
+  useEffect(() => {
+    if (search.trim()) trackSearch(search)
+  }, [search, trackSearch])
 
   useEffect(() => {
     Promise.all([fetchShopInfo(), fetchProducts()])

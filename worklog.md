@@ -24,3 +24,37 @@ Stage Summary:
 - Reserved stock automatically calculated from pending orders
 - Video upload with 30-second client-side validation
 - All lint checks pass with zero errors
+
+---
+Task ID: 2
+Agent: main
+Task: Build Custom Product Tracking System (Analytics)
+
+Work Log:
+- Verified and confirmed all existing analytics infrastructure was already in place:
+  - `src/lib/analytics.ts` - Helper library with readAnalytics, writeAnalytics, getDailyStats, getProductRanking, getSearchTerms, buildStatsResponse
+  - `src/app/api/analytics/pageview/route.ts` - POST endpoint for page view tracking
+  - `src/app/api/analytics/product-view/route.ts` - POST endpoint for product view tracking
+  - `src/app/api/analytics/search/route.ts` - POST endpoint for search query tracking
+  - `src/app/api/analytics/stats/route.ts` - GET endpoint with `force-dynamic` for comprehensive stats
+  - `data/analytics.json` - File-based JSON storage with initial empty structure
+  - `src/components/shop-homepage.tsx` - Already has page view, product view, and debounced search tracking
+  - `src/components/admin-panel.tsx` - Already has analytics interfaces, state management, fetch logic, and full TabsContent UI
+- Fixed missing `getTimeAgo` helper function in admin-panel.tsx (was referenced but not defined)
+- Moved analytics TabTrigger to correct position: after "Tổng quan", before "Nguyên liệu"
+- Removed duplicate analytics TabTrigger that was between "Hao hụt" and "Cài đặt"
+- Updated chart bar colors to match spec: pageViews `#A7DFC1`, productViews `#1A6B4F`
+- All lint checks pass with zero errors
+
+Stage Summary:
+- Complete analytics system with file-based JSON storage (no database dependency)
+- Shop homepage tracks: page views, product views (with deduplication), debounced search queries
+- Admin panel "Thống kê" tab with:
+  - 4 overview cards (total visits, today visits, top product, product views)
+  - Period selector (7/30/90 days)
+  - Daily traffic bar chart (Recharts)
+  - Visitor stats grid
+  - Top products table (rank, name, views, trend indicator)
+  - Search terms table (rank, keyword, count, results)
+  - Recent activity feed with icons and time-ago formatting
+- Analytics data auto-loads when admin switches to the Thống kê tab

@@ -74,6 +74,12 @@ import {
   Loader2,
   Printer,
   Ban,
+  Analytics,
+  Star,
+  ArrowUp,
+  ArrowDown,
+  Users,
+  SearchCode,
 } from 'lucide-react'
 import {
   BarChart,
@@ -147,6 +153,51 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Đã hủy',
 }
 
+interface AnalyticsOverview {
+  totalPageViews: number
+  todayPageViews: number
+  totalProductViews: number
+  todayProductViews: number
+  totalSearches: number
+  uniqueVisitors: number
+  todayVisitors: number
+}
+
+interface AnalyticsDailyTraffic {
+  date: string
+  pageViews: number
+  productViews: number
+  searches: number
+  visitors: number
+}
+
+interface AnalyticsTopProduct {
+  productId: string
+  productName: string
+  views: number
+  uniqueViews: number
+}
+
+interface AnalyticsSearchTerm {
+  query: string
+  count: number
+  resultsCount: number
+}
+
+interface AnalyticsRecentActivity {
+  type: string
+  detail: string
+  time: string
+}
+
+interface AnalyticsStats {
+  overview: AnalyticsOverview
+  dailyTraffic: AnalyticsDailyTraffic[]
+  topProducts: AnalyticsTopProduct[]
+  searchTerms: AnalyticsSearchTerm[]
+  recentActivity: AnalyticsRecentActivity[]
+}
+
 export default function AdminPanel({ onBack, onLogout, username, onChangePassword }: AdminPanelProps) {
   // === Tab ===
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -182,6 +233,11 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   })
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
+
+  // === Analytics ===
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsStats | null>(null)
+  const [analyticsPeriod, setAnalyticsPeriod] = useState(7)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   // === UI State ===
   const [loading, setLoading] = useState(true)
@@ -274,9 +330,31 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     }
   }, [])
 
+  // === Analytics Fetch ===
+  const fetchAnalytics = useCallback(async (period: number) => {
+    setAnalyticsLoading(true)
+    try {
+      const res = await fetch(`/api/analytics/stats?period=${period}`)
+      if (res.ok) {
+        setAnalyticsData(await res.json())
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchAll()
   }, [fetchAll])
+
+  // Fetch analytics when tab switches to analytics
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      fetchAnalytics(analyticsPeriod)
+    }
+  }, [activeTab, analyticsPeriod, fetchAnalytics])
 
   // === Helpers ===
   const formatPrice = (price: number) =>
@@ -297,6 +375,21 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       month: '2-digit',
       year: 'numeric',
     })
+
+  const getTimeAgo = (dateStr: string): string => {
+    const now = new Date()
+    const date = new Date(dateStr)
+    const diffMs = now.getTime() - date.getTime()
+    const diffSeconds = Math.floor(diffMs / 1000)
+    const diffMinutes = Math.floor(diffSeconds / 60)
+    const diffHours = Math.floor(diffMinutes / 60)
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffSeconds < 60) return 'Vừa xong'
+    if (diffMinutes < 60) return `${diffMinutes} phút trước`
+    if (diffHours < 24) return `${diffHours} giờ trước`
+    if (diffDays < 7) return `${diffDays} ngày trước`
+    return formatDateShort(dateStr)
+  }
 
   // === Computed Values ===
   const lowStockMaterials = useMemo(
@@ -1008,6 +1101,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             <TabsTrigger value="dashboard" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Tổng quan</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
+              <Analytics className="w-4 h-4" />
+              <span className="hidden sm:inline">Thống kê</span>
             </TabsTrigger>
             <TabsTrigger value="materials" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <FlaskConical className="w-4 h-4" />
@@ -2887,6 +2984,297 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
           </TabsContent>
 
           {/* ==================== Tab 6: CÀI ĐẶT ==================== */}
+          {/* ==================== Tab: THỐNG KÊ ==================== */}
+          <TabsContent value="analytics">
+            <div className="space-y-6">
+              {/* Overview Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Tổng truy cập</p>
+                        <p className="text-xl font-bold text-forest-dark">{analyticsData?.overview.totalPageViews ?? 0}</p>
+                      </div>
+                      <Eye className="w-8 h-8 text-forest-light" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Truy cập hôm nay</p>
+                        <p className="text-xl font-bold text-forest-dark">{analyticsData?.overview.todayPageViews ?? 0}</p>
+                      </div>
+                      <TrendingUp className="w-8 h-8 text-forest-light" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Top sản phẩm</p>
+                        <p className="text-sm font-bold text-forest-dark line-clamp-2">{analyticsData?.topProducts?.[0]?.productName || '—'}</p>
+                      </div>
+                      <Star className="w-8 h-8 text-forest-light" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Lượt xem SP</p>
+                        <p className="text-xl font-bold text-forest-dark">{analyticsData?.overview.totalProductViews ?? 0}</p>
+                      </div>
+                      <Package className="w-8 h-8 text-forest-light" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Period Selector */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Khoảng thời gian:</span>
+                <div className="flex gap-1">
+                  {[7, 30, 90].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setAnalyticsPeriod(d)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        analyticsPeriod === d
+                          ? 'bg-forest text-white'
+                          : 'bg-mint-light text-forest hover:bg-mint-dark/20'
+                      }`}
+                    >
+                      {d} ngày
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {analyticsLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-forest" />
+                  <span className="ml-2 text-muted-foreground">Đang tải dữ liệu...</span>
+                </div>
+              )}
+
+              {!analyticsLoading && analyticsData && (
+                <>
+                  {/* Daily Traffic Chart */}
+                  {analyticsData.dailyTraffic.length > 0 && (
+                    <Card className="bg-white rounded-xl shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <BarChart3 className="w-5 h-5 text-forest-light" />
+                          Lưu lượng truy cập hàng ngày
+                        </CardTitle>
+                        <CardDescription>Truy cập trang và xem sản phẩm theo ngày</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={analyticsData.dailyTraffic}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 11 }}
+                              tickFormatter={(v: string) => {
+                                const d = new Date(v)
+                                return `${d.getDate()}/${d.getMonth() + 1}`
+                              }}
+                            />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                            <Tooltip
+                              labelFormatter={(v: string) => {
+                                const d = new Date(v)
+                                return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                              }}
+                              contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                            />
+                            <Bar dataKey="pageViews" name="Truy cập trang" fill="#A7DFC1" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="productViews" name="Xem sản phẩm" fill="#1A6B4F" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Visitor Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-mint-light rounded-xl p-4 border border-mint-dark/20">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="w-4 h-4 text-forest-light" />
+                        <span className="text-xs text-muted-foreground">Khách truy cập ({analyticsPeriod}d)</span>
+                      </div>
+                      <p className="text-lg font-bold text-forest-dark">{analyticsData.overview.uniqueVisitors}</p>
+                    </div>
+                    <div className="bg-mint-light rounded-xl p-4 border border-mint-dark/20">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="w-4 h-4 text-forest-light" />
+                        <span className="text-xs text-muted-foreground">Hôm nay</span>
+                      </div>
+                      <p className="text-lg font-bold text-forest-dark">{analyticsData.overview.todayVisitors}</p>
+                    </div>
+                    <div className="bg-mint-light rounded-xl p-4 border border-mint-dark/20">
+                      <div className="flex items-center gap-2 mb-1">
+                        <SearchCode className="w-4 h-4 text-forest-light" />
+                        <span className="text-xs text-muted-foreground">Tìm kiếm</span>
+                      </div>
+                      <p className="text-lg font-bold text-forest-dark">{analyticsData.overview.totalSearches}</p>
+                    </div>
+                    <div className="bg-mint-light rounded-xl p-4 border border-mint-dark/20">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Eye className="w-4 h-4 text-forest-light" />
+                        <span className="text-xs text-muted-foreground">Xem SP hôm nay</span>
+                      </div>
+                      <p className="text-lg font-bold text-forest-dark">{analyticsData.overview.todayProductViews}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Top Products Table */}
+                    <Card className="bg-white rounded-xl shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Star className="w-4 h-4 text-forest-light" />
+                          Sản phẩm xem nhiều nhất
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {analyticsData.topProducts.length > 0 ? (
+                          <div className="max-h-96 overflow-y-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-8">#</TableHead>
+                                  <TableHead>Tên sản phẩm</TableHead>
+                                  <TableHead className="text-right">Lượt xem</TableHead>
+                                  <TableHead className="text-right w-20">Xu hướng</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {analyticsData.topProducts.slice(0, 10).map((product, idx) => {
+                                  // Simple trend based on position (higher = trending up)
+                                  const isTrendingUp = idx < 3
+                                  return (
+                                    <TableRow key={product.productId}>
+                                      <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
+                                      <TableCell className="font-medium text-forest-dark max-w-[180px] truncate">{product.productName}</TableCell>
+                                      <TableCell className="text-right font-semibold">{product.views}</TableCell>
+                                      <TableCell className="text-right">
+                                        {isTrendingUp ? (
+                                          <ArrowUp className="w-4 h-4 text-forest inline" />
+                                        ) : (
+                                          <ArrowDown className="w-4 h-4 text-gray-400 inline" />
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  )
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-8">Chưa có dữ liệu xem sản phẩm</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Search Terms Table */}
+                    <Card className="bg-white rounded-xl shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <SearchCode className="w-4 h-4 text-forest-light" />
+                          Từ khóa tìm kiếm
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {analyticsData.searchTerms.length > 0 ? (
+                          <div className="max-h-96 overflow-y-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-8">#</TableHead>
+                                  <TableHead>Từ khóa</TableHead>
+                                  <TableHead className="text-right">Số lần tìm</TableHead>
+                                  <TableHead className="text-right w-20">Kết quả</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {analyticsData.searchTerms.slice(0, 10).map((term, idx) => (
+                                  <TableRow key={term.query}>
+                                    <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
+                                    <TableCell className="font-medium text-forest-dark">{term.query}</TableCell>
+                                    <TableCell className="text-right font-semibold">{term.count}</TableCell>
+                                    <TableCell className="text-right text-muted-foreground">{term.resultsCount}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-8">Chưa có dữ liệu tìm kiếm</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Recent Activity */}
+                  <Card className="bg-white rounded-xl shadow-sm">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-forest-light" />
+                        Hoạt động gần đây
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {analyticsData.recentActivity.length > 0 ? (
+                        <div className="max-h-96 overflow-y-auto space-y-1">
+                          {analyticsData.recentActivity.map((activity, idx) => {
+                            const timeAgo = getTimeAgo(activity.time)
+                            const icon = activity.type === 'pageview' ? (
+                              <Eye className="w-4 h-4 text-blue-500" />
+                            ) : activity.type === 'productview' ? (
+                              <Package className="w-4 h-4 text-forest" />
+                            ) : (
+                              <SearchCode className="w-4 h-4 text-amber-500" />
+                            )
+                            return (
+                              <div
+                                key={`${activity.type}-${idx}`}
+                                className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-mint-light/50 transition-colors"
+                              >
+                                <div className="flex-shrink-0">{icon}</div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-forest-dark truncate">{activity.detail}</p>
+                                </div>
+                                <span className="text-xs text-muted-foreground flex-shrink-0">{timeAgo}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-8">Chưa có hoạt động</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {!analyticsLoading && !analyticsData && (
+                <div className="text-center py-16">
+                  <Analytics className="w-16 h-16 text-forest/10 mx-auto mb-4" />
+                  <p className="text-lg text-muted-foreground">Chưa có dữ liệu thống kê</p>
+                  <p className="text-sm text-muted-foreground mt-1">Dữ liệu sẽ được thu thập khi khách hàng truy cập trang chủ</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* ==================== Tab: CÀI ĐẶT ==================== */}
           <TabsContent value="settings">
             <div className="max-w-2xl">
               <Card>
