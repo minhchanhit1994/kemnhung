@@ -73,6 +73,7 @@ import {
   MessageCircle,
   Loader2,
   Printer,
+  Ban,
 } from 'lucide-react'
 import {
   BarChart,
@@ -93,6 +94,7 @@ import type {
   Order,
   OrderItem,
   ShopInfo,
+  WasteRecord,
 } from '@/lib/types'
 
 interface AdminPanelProps {
@@ -115,6 +117,7 @@ interface DashboardStats {
   totalProductionCost: number
   totalCogs: number
   totalProfit: number
+  totalWasteCost: number
   monthlyFinance: { month: string; revenue: number; capital: number; profit: number }[]
 }
 
@@ -162,6 +165,12 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
 
   // === Orders ===
   const [orders, setOrders] = useState<(Order & { orderItems?: OrderItem[] })[]>([])
+
+  // === Waste Records ===
+  const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>([])
+  const [wasteForm, setWasteForm] = useState({ materialId: '', quantity: '', note: 'Sản phẩm lỗi' })
+  const [wasteSearch, setWasteSearch] = useState('')
+  const [wasteSaving, setWasteSaving] = useState(false)
 
   // === Shop Info ===
   const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null)
@@ -230,7 +239,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const fetchAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [materialsRes, transactionsRes, productsRes, productionRes, dashboardRes, ordersRes, shopInfoRes] = await Promise.all([
+      const [materialsRes, transactionsRes, productsRes, productionRes, dashboardRes, ordersRes, shopInfoRes, wasteRes] = await Promise.all([
         fetch('/api/raw-materials'),
         fetch('/api/material-transactions'),
         fetch('/api/products'),
@@ -238,6 +247,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
         fetch('/api/dashboard'),
         fetch('/api/orders'),
         fetch('/api/shop-info'),
+        fetch('/api/waste-records').catch(() => null),
       ])
       if (materialsRes.ok) setRawMaterials(await materialsRes.json())
       if (transactionsRes.ok) setMaterialTransactions(await transactionsRes.json())
@@ -245,6 +255,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       if (productionRes.ok) setProductionOrders(await productionRes.json())
       if (dashboardRes.ok) setStats(await dashboardRes.json())
       if (ordersRes.ok) setOrders(await ordersRes.json())
+      if (wasteRes && wasteRes.ok) setWasteRecords(await wasteRes.json())
       if (shopInfoRes.ok) {
         const info = await shopInfoRes.json()
         setShopInfo(info)
@@ -1009,6 +1020,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <ClipboardList className="w-4 h-4" />
               <span className="hidden sm:inline">Đơn hàng</span>
             </TabsTrigger>
+            <TabsTrigger value="waste" className="gap-2 data-[state=active]:bg-rose-100 data-[state=active]:text-rose-800">
+              <Ban className="w-4 h-4" />
+              <span className="hidden sm:inline">Hao hụt</span>
+            </TabsTrigger>
             <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Cài đặt</span>
@@ -1114,7 +1129,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               )}
 
               {/* Summary Cards row 2 */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card className="border-l-4 border-l-teal-500">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -1158,6 +1173,17 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                         <p className="text-2xl font-bold">{lowStockMaterials.length}</p>
                       </div>
                       <AlertTriangle className="w-8 h-8 text-rose-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-red-500">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Chi phí hao hụt</p>
+                        <p className="text-lg font-bold text-red-700">{formatPrice(stats?.totalWasteCost ?? 0)}</p>
+                      </div>
+                      <Ban className="w-8 h-8 text-red-500" />
                     </div>
                   </CardContent>
                 </Card>
@@ -2616,7 +2642,226 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
         </DialogContent>
       </Dialog>
 
-          {/* ==================== Tab 5: CÀI ĐẶT ==================== */}
+          {/* ==================== Tab 5: HAO HỤT ==================== */}
+          <TabsContent value="waste">
+            <div className="space-y-6">
+              {/* Waste Input Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Ban className="w-5 h-5 text-red-500" />
+                    Ghi nhận hao hụt
+                  </CardTitle>
+                  <CardDescription>
+                    Ghi nhận nguyên liệu hao hụt do sản phẩm bị lỗi. Tồn kho nguyên liệu sẽ tự động được trừ.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Material Selection */}
+                    <div className="space-y-2">
+                      <Label>Nguyên liệu</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input
+                          value={wasteForm.materialId ? (rawMaterials.find(m => m.id === wasteForm.materialId)?.name || '') : ''}
+                          onChange={(e) => {
+                            const val = e.target.value.toLowerCase()
+                            if (!val) {
+                              setWasteForm(prev => ({ ...prev, materialId: '' }))
+                            }
+                            setWasteSearch(val)
+                          }}
+                          onFocus={() => setWasteSearch(wasteForm.materialId ? '' : ' ')}
+                          placeholder="Tìm hoặc chọn nguyên liệu..."
+                          className="pl-9"
+                        />
+                        {wasteSearch !== '' && (
+                          <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {rawMaterials
+                              .filter(m => m.name.toLowerCase().includes(wasteSearch.toLowerCase()) && m.currentStock > 0)
+                              .slice(0, 10)
+                              .map(m => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => {
+                                    setWasteForm(prev => ({ ...prev, materialId: m.id }))
+                                    setWasteSearch('')
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-emerald-50 transition-colors flex items-center justify-between text-sm"
+                                >
+                                  <span>{m.name}</span>
+                                  <span className="text-xs text-gray-500">
+                                    Còn {m.currentStock} {m.unit}
+                                    {m.currentStock <= m.minStock && m.minStock > 0 && (
+                                      <span className="text-red-500 ml-1">⚠</span>
+                                    )}
+                                  </span>
+                                </button>
+                              ))
+                            }
+                            {rawMaterials.filter(m => m.name.toLowerCase().includes(wasteSearch.toLowerCase()) && m.currentStock > 0).length === 0 && (
+                              <p className="px-3 py-2 text-sm text-gray-500">Không tìm thấy nguyên liệu</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Chọn nguyên liệu bị hao hụt</p>
+                    </div>
+
+                    {/* Quantity */}
+                    <div className="space-y-2">
+                      <Label htmlFor="waste-quantity">Số lượng hao hụt</Label>
+                      <Input
+                        id="waste-quantity"
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={wasteForm.quantity}
+                        onChange={(e) => setWasteForm(prev => ({ ...prev, quantity: e.target.value }))}
+                      />
+                      {wasteForm.materialId && (
+                        <p className="text-xs text-muted-foreground">
+                          Đơn vị: {rawMaterials.find(m => m.id === wasteForm.materialId)?.unit || ''} |
+                          Đơn giá: {formatPrice(rawMaterials.find(m => m.id === wasteForm.materialId)?.unitPrice || 0)} |
+                          Tồn kho: {rawMaterials.find(m => m.id === wasteForm.materialId)?.currentStock || 0}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Note */}
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="waste-note">Ghi chú</Label>
+                      <Input
+                        id="waste-note"
+                        value={wasteForm.note}
+                        onChange={(e) => setWasteForm(prev => ({ ...prev, note: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground">Lý do hao hụt: sản phẩm lỗi, gãy vỡ, hỏng...</p>
+                    </div>
+                  </div>
+
+                  {/* Preview & Submit */}
+                  {wasteForm.materialId && wasteForm.quantity && parseFloat(wasteForm.quantity) > 0 && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-red-800">
+                          Chi phí hao hụt: <span className="font-bold">{formatPrice(parseFloat(wasteForm.quantity) * (rawMaterials.find(m => m.id === wasteForm.materialId)?.unitPrice || 0))}</span>
+                        </p>
+                        <p className="text-xs text-red-600 mt-1">
+                          {rawMaterials.find(m => m.id === wasteForm.materialId)?.name || ''} × {parseFloat(wasteForm.quantity)} {rawMaterials.find(m => m.id === wasteForm.materialId)?.unit || ''}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={async () => {
+                          setWasteSaving(true)
+                          try {
+                            const res = await fetch('/api/waste-records', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                materialId: wasteForm.materialId,
+                                quantity: parseFloat(wasteForm.quantity),
+                                note: wasteForm.note,
+                              }),
+                            })
+                            if (res.ok) {
+                              setWasteForm({ materialId: '', quantity: '', note: 'Sản phẩm lỗi' })
+                              fetchAll()
+                            } else {
+                              const err = await res.json()
+                              alert(err.error || 'Lỗi ghi nhận hao hụt')
+                            }
+                          } catch {
+                            alert('Lỗi kết nối')
+                          } finally {
+                            setWasteSaving(false)
+                          }
+                        }}
+                        disabled={wasteSaving}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        {wasteSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                        Xác nhận hao hụt
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Waste Records Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <History className="w-5 h-5 text-red-500" />
+                    Lịch sử hao hụt
+                  </CardTitle>
+                  <CardDescription>
+                    Tổng chi phí hao hụt: <span className="font-bold text-red-700">{formatPrice(wasteRecords.reduce((sum, r) => sum + r.totalCost, 0))}</span>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {wasteRecords.length === 0 ? (
+                    <div className="text-center py-10">
+                      <Ban className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-muted-foreground">Chưa có bản ghi hao hụt nào</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nguyên liệu</TableHead>
+                            <TableHead className="text-right">Số lượng</TableHead>
+                            <TableHead className="text-right">Đơn giá</TableHead>
+                            <TableHead className="text-right">Chi phí</TableHead>
+                            <TableHead>Ghi chú</TableHead>
+                            <TableHead>Ngày</TableHead>
+                            <TableHead className="text-right">Thao tác</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {wasteRecords.map((record) => (
+                            <TableRow key={record.id}>
+                              <TableCell className="font-medium">{record.material?.name || record.materialId}</TableCell>
+                              <TableCell className="text-right">
+                                {record.quantity} {record.material?.unit || ''}
+                              </TableCell>
+                              <TableCell className="text-right text-sm">{formatPrice(record.unitPrice)}</TableCell>
+                              <TableCell className="text-right font-semibold text-red-700">{formatPrice(record.totalCost)}</TableCell>
+                              <TableCell className="text-sm text-gray-500 max-w-[200px] truncate">{record.note || '-'}</TableCell>
+                              <TableCell className="text-sm text-gray-500">{formatDateShort(record.createdAt)}</TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={async () => {
+                                    if (!confirm('Xóa bản ghi hao hụt này? Tồn kho nguyên liệu sẽ được khôi phục.')) return
+                                    try {
+                                      const res = await fetch(`/api/waste-records?id=${record.id}`, { method: 'DELETE' })
+                                      if (res.ok) fetchAll()
+                                      else alert('Lỗi xóa bản ghi')
+                                    } catch {
+                                      alert('Lỗi kết nối')
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* ==================== Tab 6: CÀI ĐẶT ==================== */}
           <TabsContent value="settings">
             <div className="max-w-2xl">
               <Card>

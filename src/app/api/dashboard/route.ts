@@ -180,6 +180,17 @@ export async function GET() {
         }
       })
 
+    // === Total Waste Cost ===
+    let totalWasteCost = 0
+    try {
+      const { data: wasteRecords } = await supabase
+        .from('waste_records')
+        .select('total_cost')
+      totalWasteCost = (wasteRecords || []).reduce((sum, r) => sum + (r.total_cost || 0), 0)
+    } catch {
+      // Table might not exist yet
+    }
+
     // === Recent Production Orders ===
     const { data: recentProductionData } = await supabase
       .from('production_orders')
@@ -260,6 +271,7 @@ export async function GET() {
       totalProductionCost,
       totalCogs,
       totalProfit,
+      totalWasteCost,
       monthlyFinance,
     })
   } catch (error) {
