@@ -1,5 +1,25 @@
 import fs from 'fs'
 import path from 'path'
+import { supabase } from '@/lib/supabase'
+
+let _supabaseReady: boolean | null = null
+
+export function resetSupabaseCache() {
+  _supabaseReady = null
+}
+
+async function isSupabaseReady(): Promise<boolean> {
+  if (_supabaseReady !== null) return _supabaseReady
+  if (!supabase) { _supabaseReady = false; return false }
+  try {
+    const { error } = await supabase.from('page_views').select('id').limit(1)
+    _supabaseReady = !error
+    return _supabaseReady
+  } catch {
+    _supabaseReady = false
+    return false
+  }
+}
 
 // === Types ===
 export interface PageView {
@@ -38,25 +58,161 @@ export interface AnalyticsData {
 }
 
 // === File Path ===
-const ANALYTICS_FILE = path.join(process.cwd(), 'data', 'analytics.json')
+const ANALYTICS_DIR = path.join(process.cwd(), 'data')
+const ANALYTICS_FILE = path.join(ANALYTICS_DIR, 'analytics.json')
 
-// === Read / Write ===
+// Ensure writable data directory
+function ensureDataDir() {
+  try {
+    if (!fs.existsSync(ANALYTICS_DIR)) {
+      fs.mkdirSync(ANALYTICS_DIR, { recursive: true })
+    }
+    // Check if file is writable, if not use /tmp
+    try {
+      fs.accessSync(ANALYTICS_FILE, fs.constants.W_OK)
+    } catch {
+      // Try to create or re-create the file
+      try {
+        fs.writeFileSync(ANALYTICS_FILE, JSON.stringify({
+          pageViews: [],
+          productViews: [],
+          searchQueries: [],
+        }, null, 2), 'utf-8')
+      } catch {
+        // If still can't write, use /tmp fallback
+        const tmpDir = path.join('/tmp', 'kemnhung-analytics')
+        if (!fs.existsSync(tmpDir)) {
+          fs.mkdirSync(tmpDir, { recursive: true })
+        }
+        return path.join(tmpDir, 'analytics.json')
+      }
+    }
+    return ANALYTICS_FILE
+  } catch {
+    return path.join('/tmp', 'kemnhung-analytics', 'analytics.json')
+  }
+}
+
+// === Supabase Read ===
+async function readFromSupabase(): Promise<AnalyticsData | null> {
+  if (!(await isSupabaseReady())) return null
+  try {
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 365)
+
+    const [pvRes, prodRes, sqRes] = await Promise.all([
+      supabase
+        .from('page_views')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10000),
+      supabase
+        .from('product_views')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10000),
+      supabase
+        .from('search_queries')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10000),
+    ])
+
+    if (pvRes.error || prodRes.error || sqRes.error) {
+      return null
+    }
+
+    const toCamel = (obj: Record<string, unknown>) => {
+      const result: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(obj)) {
+        const camelKey = key.replace(/_([a-z])/g, (_, l) => l.toUpperCase())
+        result[camelKey] = value
+      }
+      return result as Record<string, unknown>
+    }
+
+    return {
+      pageViews: (pvRes.data || []).map(toCamel) as PageView[],
+      productViews: (prodRes.data || []).map(toCamel) as ProductView[],
+      searchQueries: (sqRes.data || []).map(toCamel) as SearchQuery[],
+    }
+  } catch {
+    return null
+  }
+}
+
+// === Supabase Write ===
+async function writeToSupabasePageView(data: Omit<PageView, 'id'>): Promise<boolean> {
+  try {
+    const snakeData = {
+      id: crypto.randomUUID(),
+      page: data.page,
+      referrer: data.referrer,
+      user_agent: data.userAgent,
+      ip: data.ip,
+      session_id: data.sessionId,
+      created_at: data.createdAt,
+    }
+    const { error } = await supabase.from('page_views').insert(snakeData)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+async function writeToSupabaseProductView(data: Omit<ProductView, 'id'>): Promise<boolean> {
+  try {
+    const snakeData = {
+      id: crypto.randomUUID(),
+      product_id: data.productId,
+      product_name: data.productName,
+      user_agent: data.userAgent,
+      ip: data.ip,
+      session_id: data.sessionId,
+      created_at: data.createdAt,
+    }
+    const { error } = await supabase.from('product_views').insert(snakeData)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+async function writeToSupabaseSearchQuery(data: Omit<SearchQuery, 'id'>): Promise<boolean> {
+  try {
+    const snakeData = {
+      id: crypto.randomUUID(),
+      query: data.query,
+      results_count: data.resultsCount,
+      ip: data.ip,
+      session_id: data.sessionId,
+      created_at: data.createdAt,
+    }
+    const { error } = await supabase.from('search_queries').insert(snakeData)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+// === File Read / Write ===
 export function readAnalytics(): AnalyticsData {
   try {
-    const dir = path.dirname(ANALYTICS_FILE)
+    const filePath = ensureDataDir()
+    const dir = path.dirname(filePath)
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
     }
-    if (!fs.existsSync(ANALYTICS_FILE)) {
+    if (!fs.existsSync(filePath)) {
       const initial: AnalyticsData = {
         pageViews: [],
         productViews: [],
         searchQueries: [],
       }
-      fs.writeFileSync(ANALYTICS_FILE, JSON.stringify(initial, null, 2), 'utf-8')
+      fs.writeFileSync(filePath, JSON.stringify(initial, null, 2), 'utf-8')
       return initial
     }
-    const raw = fs.readFileSync(ANALYTICS_FILE, 'utf-8')
+    const raw = fs.readFileSync(filePath, 'utf-8')
     return JSON.parse(raw) as AnalyticsData
   } catch (error) {
     console.error('Error reading analytics.json:', error)
@@ -66,25 +222,79 @@ export function readAnalytics(): AnalyticsData {
 
 export function writeAnalytics(data: AnalyticsData): void {
   try {
-    const dir = path.dirname(ANALYTICS_FILE)
+    const filePath = ensureDataDir()
+    const dir = path.dirname(filePath)
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true })
     }
-    fs.writeFileSync(ANALYTICS_FILE, JSON.stringify(data, null, 2), 'utf-8')
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
   } catch (error) {
     console.error('Error writing analytics.json:', error)
   }
 }
 
+// === Unified Read (Supabase first, file fallback) ===
+export async function readAnalyticsData(): Promise<AnalyticsData> {
+  const supabaseData = await readFromSupabase()
+  if (supabaseData) return supabaseData
+  return readAnalytics()
+}
+
+// === Unified Write ===
+export async function recordPageView(data: Omit<PageView, 'id'>): Promise<void> {
+  const supabaseOk = await writeToSupabasePageView(data)
+  if (supabaseOk) return
+
+  // File fallback
+  const fileData = readAnalytics()
+  fileData.pageViews.push({
+    ...data,
+    id: crypto.randomUUID(),
+  })
+  if (fileData.pageViews.length > 10000) {
+    fileData.pageViews = fileData.pageViews.slice(-10000)
+  }
+  writeAnalytics(fileData)
+}
+
+export async function recordProductView(data: Omit<ProductView, 'id'>): Promise<void> {
+  const supabaseOk = await writeToSupabaseProductView(data)
+  if (supabaseOk) return
+
+  const fileData = readAnalytics()
+  fileData.productViews.push({
+    ...data,
+    id: crypto.randomUUID(),
+  })
+  if (fileData.productViews.length > 10000) {
+    fileData.productViews = fileData.productViews.slice(-10000)
+  }
+  writeAnalytics(fileData)
+}
+
+export async function recordSearchQuery(data: Omit<SearchQuery, 'id'>): Promise<void> {
+  const supabaseOk = await writeToSupabaseSearchQuery(data)
+  if (supabaseOk) return
+
+  const fileData = readAnalytics()
+  fileData.searchQueries.push({
+    ...data,
+    id: crypto.randomUUID(),
+  })
+  if (fileData.searchQueries.length > 10000) {
+    fileData.searchQueries = fileData.searchQueries.slice(-10000)
+  }
+  writeAnalytics(fileData)
+}
+
 // === Generate Session ID ===
 export function generateSessionId(userAgent?: string): string {
   const fingerprint = userAgent || 'unknown'
-  // Simple hash for session ID
   let hash = 0
   for (let i = 0; i < fingerprint.length; i++) {
     const char = fingerprint.charCodeAt(i)
     hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32bit integer
+    hash = hash & hash
   }
   return Math.abs(hash).toString(36)
 }
@@ -112,7 +322,6 @@ export function getDailyStats(
     visitors: Set<string>
   }>()
 
-  // Initialize all days
   for (let i = 0; i < days; i++) {
     const d = new Date(startDate)
     d.setDate(d.getDate() + i)
@@ -125,7 +334,6 @@ export function getDailyStats(
     })
   }
 
-  // Aggregate page views
   for (const pv of data.pageViews) {
     const dateKey = pv.createdAt.split('T')[0]
     const entry = dailyMap.get(dateKey)
@@ -135,7 +343,6 @@ export function getDailyStats(
     }
   }
 
-  // Aggregate product views
   for (const pv of data.productViews) {
     const dateKey = pv.createdAt.split('T')[0]
     const entry = dailyMap.get(dateKey)
@@ -145,7 +352,6 @@ export function getDailyStats(
     }
   }
 
-  // Aggregate search queries
   for (const sq of data.searchQueries) {
     const dateKey = sq.createdAt.split('T')[0]
     const entry = dailyMap.get(dateKey)
@@ -243,7 +449,6 @@ export function buildStatsResponse(data: AnalyticsData, period: number) {
   periodStart.setDate(periodStart.getDate() - period + 1)
   periodStart.setHours(0, 0, 0, 0)
 
-  // Filter by period
   const periodPageViews = data.pageViews.filter((pv) => new Date(pv.createdAt) >= periodStart)
   const periodProductViews = data.productViews.filter((pv) => new Date(pv.createdAt) >= periodStart)
   const periodSearches = data.searchQueries.filter((sq) => new Date(sq.createdAt) >= periodStart)
@@ -251,7 +456,6 @@ export function buildStatsResponse(data: AnalyticsData, period: number) {
   const todayPageViews = data.pageViews.filter((pv) => pv.createdAt.startsWith(todayStr))
   const todayProductViews = data.productViews.filter((pv) => pv.createdAt.startsWith(todayStr))
 
-  // Unique visitors (by sessionId)
   const allSessionIds = new Set([
     ...periodPageViews.map((pv) => pv.sessionId),
     ...periodProductViews.map((pv) => pv.sessionId),
@@ -264,19 +468,12 @@ export function buildStatsResponse(data: AnalyticsData, period: number) {
     ...data.searchQueries.filter((sq) => sq.createdAt.startsWith(todayStr)).map((sq) => sq.sessionId),
   ])
 
-  // Daily traffic
   const dailyTraffic = getDailyStats(data, period)
-
-  // Top products
   const topProducts = getProductRanking(data, 10)
-
-  // Search terms
   const searchTerms = getSearchTerms(data, 10)
 
-  // Recent activity
   const recentActivity: Array<{ type: string; detail: string; time: string }> = []
 
-  // Collect all events with normalized time
   for (const pv of data.pageViews.slice(-50)) {
     recentActivity.push({
       type: 'pageview',
@@ -299,9 +496,7 @@ export function buildStatsResponse(data: AnalyticsData, period: number) {
     })
   }
 
-  // Sort by time descending and take top 20
   recentActivity.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-  const recentActivityTop = recentActivity.slice(0, 20)
 
   return {
     overview: {
@@ -316,6 +511,6 @@ export function buildStatsResponse(data: AnalyticsData, period: number) {
     dailyTraffic,
     topProducts,
     searchTerms,
-    recentActivity: recentActivityTop,
+    recentActivity: recentActivity.slice(0, 20),
   }
 }

@@ -74,12 +74,16 @@ import {
   Loader2,
   Printer,
   Ban,
-  Analytics,
+  ChartSpline,
   Star,
   ArrowUp,
   ArrowDown,
   Users,
   SearchCode,
+  Database,
+  Copy,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react'
 import {
   BarChart,
@@ -238,6 +242,11 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const [analyticsData, setAnalyticsData] = useState<AnalyticsStats | null>(null)
   const [analyticsPeriod, setAnalyticsPeriod] = useState(7)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [dbSetupStatus, setDbSetupStatus] = useState<'loading' | 'connected' | 'needs_setup' | 'not_configured' | 'error'>('loading')
+  const [dbSetupSql, setDbSetupSql] = useState('')
+  const [dbSetupDashboardUrl, setDbSetupDashboardUrl] = useState('')
+  const [sqlCopied, setSqlCopied] = useState(false)
+  const [setupRunning, setSetupRunning] = useState(false)
 
   // === UI State ===
   const [loading, setLoading] = useState(true)
@@ -345,6 +354,51 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     }
   }, [])
 
+  // === DB Setup Check ===
+  const checkDbSetup = useCallback(async () => {
+    setDbSetupStatus('loading')
+    try {
+      const res = await fetch('/api/analytics/setup')
+      if (res.ok) {
+        const data = await res.json()
+        setDbSetupSql(data.sql || '')
+        setDbSetupDashboardUrl(data.supabaseDashboardUrl || '')
+        if (data.status === 'CONNECTED') setDbSetupStatus('connected')
+        else if (data.status === 'NEEDS_SETUP') setDbSetupStatus('needs_setup')
+        else if (data.status === 'NOT_CONFIGURED') setDbSetupStatus('not_configured')
+        else setDbSetupStatus('error')
+      }
+    } catch {
+      setDbSetupStatus('error')
+    }
+  }, [])
+
+  const runAutoSetup = useCallback(async () => {
+    setSetupRunning(true)
+    try {
+      const res = await fetch('/api/analytics/setup', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) {
+          await checkDbSetup()
+        } else {
+          setDbSetupStatus('needs_setup')
+        }
+      }
+    } catch {
+      setDbSetupStatus('error')
+    } finally {
+      setSetupRunning(false)
+    }
+  }, [checkDbSetup])
+
+  const copySql = useCallback(() => {
+    navigator.clipboard.writeText(dbSetupSql).then(() => {
+      setSqlCopied(true)
+      setTimeout(() => setSqlCopied(false), 3000)
+    })
+  }, [dbSetupSql])
+
   useEffect(() => {
     fetchAll()
   }, [fetchAll])
@@ -352,9 +406,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   // Fetch analytics when tab switches to analytics
   useEffect(() => {
     if (activeTab === 'analytics') {
+      checkDbSetup()
       fetchAnalytics(analyticsPeriod)
     }
-  }, [activeTab, analyticsPeriod, fetchAnalytics])
+  }, [activeTab, analyticsPeriod, fetchAnalytics, checkDbSetup])
 
   // === Helpers ===
   const formatPrice = (price: number) =>
@@ -1103,7 +1158,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <span className="hidden sm:inline">Tổng quan</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
-              <Analytics className="w-4 h-4" />
+              <ChartSpline className="w-4 h-4" />
               <span className="hidden sm:inline">Thống kê</span>
             </TabsTrigger>
             <TabsTrigger value="materials" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
@@ -2983,10 +3038,110 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             </div>
           </TabsContent>
 
-          {/* ==================== Tab 6: CÀI ĐẶT ==================== */}
           {/* ==================== Tab: THỐNG KÊ ==================== */}
           <TabsContent value="analytics">
             <div className="space-y-6">
+              {/* Database Connection Status */}
+              <Card className={`rounded-xl shadow-sm border ${dbSetupStatus === 'connected' ? 'border-green-300 bg-green-50/50' : dbSetupStatus === 'needs_setup' ? 'border-amber-300 bg-amber-50/50' : 'border-gray-200 bg-white'}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Database className="w-5 h-5" />
+                      <span className="font-semibold text-sm">Kết nối database</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {dbSetupStatus === 'connected' && (
+                        <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Đã kết nối Supabase
+                        </Badge>
+                      )}
+                      {dbSetupStatus === 'needs_setup' && (
+                        <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
+                          Cần cài đặt
+                        </Badge>
+                      )}
+                      {dbSetupStatus === 'not_configured' && (
+                        <Badge className="bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-100">
+                          Chưa cấu hình
+                        </Badge>
+                      )}
+                      {dbSetupStatus === 'loading' && (
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                      )}
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={checkDbSetup} title="Kiểm tra lại">
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {dbSetupStatus === 'connected' && (
+                    <p className="text-xs text-green-600">
+                      Dữ liệu thống kê đang được lưu trữ trên Supabase cloud an toàn.
+                    </p>
+                  )}
+
+                  {(dbSetupStatus === 'needs_setup' || dbSetupStatus === 'not_configured') && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        {dbSetupStatus === 'not_configured'
+                          ? 'Chưa cấu hình Supabase. Hệ thống đang dùng file lưu trữ tạm thời.'
+                          : 'Supabase đã cấu hình nhưng chưa tạo bảng analytics. Hệ thống đang dùng file lưu trữ tạm thời.'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {dbSetupStatus === 'needs_setup' && (
+                          <Button
+                            size="sm"
+                            onClick={runAutoSetup}
+                            disabled={setupRunning}
+                            className="bg-forest hover:bg-forest-dark text-white"
+                          >
+                            {setupRunning ? (
+                              <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />Đang cài đặt...</>
+                            ) : (
+                              <><Database className="w-3.5 h-3.5 mr-1" />Tự động cài đặt</>
+                            )}
+                          </Button>
+                        )}
+                        {dbSetupSql && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={copySql}
+                            className="border-forest/30 text-forest hover:bg-forest/5"
+                          >
+                            {sqlCopied ? (
+                              <><CheckCircle2 className="w-3.5 h-3.5 mr-1" />Đã copy SQL!</>
+                            ) : (
+                              <><Copy className="w-3.5 h-3.5 mr-1" />Copy SQL</>
+                            )}
+                          </Button>
+                        )}
+                        {dbSetupDashboardUrl && (
+                          <a href={dbSetupDashboardUrl} target="_blank" rel="noopener noreferrer">
+                            <Button size="sm" variant="outline" className="border-forest/30 text-forest hover:bg-forest/5">
+                              <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                              Mở Supabase SQL Editor
+                            </Button>
+                          </a>
+                        )}
+                      </div>
+                      {dbSetupStatus === 'needs_setup' && dbSetupSql && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Hướng dẫn:</p>
+                          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                            <li>Nhấn "Copy SQL" hoặc "Tự động cài đặt"</li>
+                            <li>Nếu tự động không được, mở Supabase SQL Editor</li>
+                            <li>Dán SQL và nhấn Run</li>
+                            <li>Quay lại đây và nhấn kiểm tra lại</li>
+                          </ol>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Overview Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
@@ -3266,7 +3421,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
 
               {!analyticsLoading && !analyticsData && (
                 <div className="text-center py-16">
-                  <Analytics className="w-16 h-16 text-forest/10 mx-auto mb-4" />
+                  <ChartSpline className="w-16 h-16 text-forest/10 mx-auto mb-4" />
                   <p className="text-lg text-muted-foreground">Chưa có dữ liệu thống kê</p>
                   <p className="text-sm text-muted-foreground mt-1">Dữ liệu sẽ được thu thập khi khách hàng truy cập trang chủ</p>
                 </div>
