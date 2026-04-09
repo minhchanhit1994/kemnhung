@@ -89,6 +89,19 @@ export interface OrderItem {
   createdAt: string
 }
 
+export interface WasteRecord {
+  id: string
+  materialId: string
+  quantity: number
+  unitPrice: number   // unit price at time of recording
+  totalCost: number   // quantity * unitPrice
+  note: string
+  createdAt: string
+  updatedAt: string
+  // joined fields
+  material?: { name: string; unit: string }
+}
+
 export interface ShopInfo {
   id: string
   shopName: string
