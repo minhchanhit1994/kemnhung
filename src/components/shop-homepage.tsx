@@ -151,8 +151,28 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   )
 
   const zaloNumber = shopInfo.zalo || shopInfo.phone
-  const zaloLink = zaloNumber ? `https://zalo.me/${zaloNumber.replace(/^0/, '')}` : null
+  const zaloClean = zaloNumber ? zaloNumber.replace(/^0/, '') : ''
+  const zaloLink = zaloClean ? `https://zalo.me/${zaloClean}` : null
+  const zaloDeepLink = zaloClean ? `zalo://qr/p/${zaloClean}` : null
   const displayPhone = shopInfo.phone || shopInfo.zalo || ''
+
+  // Handle Zalo click: use deep link on mobile, web link on desktop
+  const handleZaloClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!zaloDeepLink) return
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      e.preventDefault()
+      // Try Zalo deep link first
+      window.location.href = zaloDeepLink
+      // Fallback to web link if app not installed (after 2s)
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.location.href = zaloLink!
+        }
+      }, 2000)
+    }
+    // On desktop: let default href behavior (opens zalo.me)
+  }, [zaloDeepLink, zaloLink])
 
   const shopNameParts = shopInfo.shopName || 'Kẽm Nhung'
   const nameWords = shopNameParts.trim().split(/\s+/)
@@ -235,7 +255,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               Xem sản phẩm
             </a>
             {zaloLink ? (
-              <a href={zaloLink} className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
+              <a href={zaloLink} onClick={handleZaloClick} className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </a>
@@ -361,6 +381,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <div className="flex items-center justify-center gap-4 text-sm mb-2">
                 <a
                   href={zaloLink || '#'}
+                  onClick={handleZaloClick}
                   className="flex items-center gap-1.5 hover:text-tan transition-colors"
                 >
                   <Phone className="w-4 h-4" />
@@ -463,6 +484,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               {zaloLink ? (
                 <a
                   href={zaloLink}
+                  onClick={handleZaloClick}
                   className="flex items-center justify-center gap-2 w-full bg-forest hover:bg-forest-dark text-white font-semibold py-3 rounded-xl transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" />
