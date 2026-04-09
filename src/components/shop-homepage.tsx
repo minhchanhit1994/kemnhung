@@ -85,19 +85,19 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   const highlightWord = nameWords.length > 0 ? nameWords[nameWords.length - 1] : ''
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-white">
       {/* === Hero Section === */}
       <header className="relative overflow-hidden bg-sage-pastel">
         <div className="max-w-5xl mx-auto px-4 py-10 md:py-16 text-center">
           {/* Logo */}
-          <div className="mb-6 flex justify-center">
+          <div className="mb-5 flex justify-center">
             <img
               src="/logo.png"
               alt="Mộc Đậu Decor Logo"
               className="h-36 md:h-48 w-auto drop-shadow-md"
             />
           </div>
-          <div className="inline-flex items-center gap-2 bg-white/50 backdrop-blur-sm border border-white/60 rounded-full px-4 py-2 mb-5">
+          <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-white/70 rounded-full px-4 py-2 mb-4">
             <Gem className="w-4 h-4 text-tan" />
             <span className="text-sm text-forest/60">Handmade with Love</span>
           </div>
@@ -144,7 +144,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm kiếm sản phẩm..."
-              className="pl-10 h-11 rounded-full border-forest/15 bg-white shadow-sm focus:ring-forest/30"
+              className="pl-10 h-11 rounded-full border-forest/15 bg-sage-pastel/30 shadow-sm focus:ring-forest/30"
             />
           </div>
         </div>
@@ -180,10 +180,10 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             {filteredProducts.map((product) => (
               <Card
                 key={product.id}
-                className="group border-0 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden bg-white rounded-2xl"
+                className="group border shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden bg-white rounded-2xl border-sage-pastel/50"
                 onClick={() => setSelectedProduct(product)}
               >
-                <div className="relative aspect-square bg-cream overflow-hidden rounded-t-2xl">
+                <div className="relative aspect-square bg-sage-pastel/20 overflow-hidden rounded-t-2xl">
                   {product.imageUrl ? (
                     <img
                       src={product.imageUrl}
@@ -191,7 +191,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cream to-tan/10">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sage-pastel/30 to-tan/10">
                       <Gem className="w-12 h-12 text-forest/20" />
                     </div>
                   )}
@@ -224,7 +224,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
       </section>
 
       {/* === Footer === */}
-      <footer className="bg-forest-dark text-white/70 mt-12">
+      <footer className="bg-sage-pastel text-forest/70 mt-12">
         <div className="max-w-5xl mx-auto px-4 py-10">
           <div className="text-center">
             {/* Logo in footer */}
@@ -235,31 +235,31 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 className="h-20 w-auto opacity-80"
               />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">
+            <h3 className="text-xl font-bold text-forest-dark mb-2">
               {nameWords.length > 1 ? (
                 <>
                   {nameWords.slice(0, -1).join(' ')}{' '}
-                  <span className="text-tan-light">{highlightWord}</span>
+                  <span className="text-tan">{highlightWord}</span>
                 </>
               ) : (
-                <span className="text-tan-light">{shopNameParts}</span>
+                <span className="text-tan">{shopNameParts}</span>
               )}
             </h3>
-            <p className="text-sm mb-4 text-white/60">Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.</p>
+            <p className="text-sm mb-4 text-forest/50">Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.</p>
             {displayPhone && (
               <div className="flex items-center justify-center gap-4 text-sm mb-2">
                 <a
                   href={zaloLink || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 hover:text-tan-light transition-colors"
+                  className="flex items-center gap-1.5 hover:text-tan transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                   {displayPhone}
                 </a>
               </div>
             )}
-            <p className="text-xs text-white/30 mt-6">
+            <p className="text-xs text-forest/30 mt-6">
               &copy; {new Date().getFullYear()} {shopNameParts}. All rights reserved.
             </p>
           </div>
@@ -306,7 +306,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             </button>
 
             {/* Product Image / Video */}
-            <div className="relative aspect-square bg-cream rounded-t-2xl overflow-hidden">
+            <div className="relative aspect-square bg-sage-pastel/20 rounded-t-2xl overflow-hidden">
               {selectedProduct.videoUrl ? (
                 <video
                   src={selectedProduct.videoUrl}
@@ -322,7 +322,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cream to-tan/10">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sage-pastel/30 to-tan/10">
                   <Gem className="w-20 h-20 text-forest/20" />
                 </div>
               )}
