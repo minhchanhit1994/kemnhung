@@ -95,7 +95,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             />
           </div>
           <div className="inline-flex items-center bg-white/60 backdrop-blur-sm border border-white/70 rounded-full px-4 py-2 mb-4">
-            <span className="text-sm text-forest/60">Handmade with Love</span>
+            <span className="text-sm text-forest-light">Handmade with Love</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight text-forest-dark">
             {nameWords.length > 1 ? (
@@ -107,7 +107,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <span className="text-tan">{shopNameParts}</span>
             )}
           </h1>
-          <p className="text-base md:text-lg text-forest/50 max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-base md:text-lg text-forest/70 max-w-2xl mx-auto mb-8 leading-relaxed">
             Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -116,7 +116,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               Xem sản phẩm
             </a>
             {zaloLink ? (
-              <a href={zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest">
+              <a href={zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </a>
@@ -217,7 +217,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
       </section>
 
       {/* === Footer === */}
-      <footer className="bg-mint text-forest/70 mt-12">
+      <footer className="bg-mint text-forest mt-12">
         <div className="max-w-5xl mx-auto px-4 py-10">
           <div className="text-center">
             <div className="mb-4 flex justify-center">
@@ -237,7 +237,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 <span className="text-tan">{shopNameParts}</span>
               )}
             </h3>
-            <p className="text-sm mb-4 text-forest/50">Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.</p>
+            <p className="text-sm mb-4 text-forest/70">Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.</p>
             {displayPhone && (
               <div className="flex items-center justify-center gap-4 text-sm mb-2">
                 <a
@@ -251,7 +251,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 </a>
               </div>
             )}
-            <p className="text-xs text-forest/30 mt-6">
+            <p className="text-xs text-forest/50 mt-6">
               &copy; {new Date().getFullYear()} {shopNameParts}. All rights reserved.
             </p>
           </div>

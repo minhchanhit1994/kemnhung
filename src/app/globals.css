@@ -45,9 +45,9 @@
 
 /* Brand colors - Mint green palette (harmonious) */
 @theme {
-  --color-forest: #34A67F;
-  --color-forest-light: #4ECBA0;
-  --color-forest-dark: #1B5E42;
+  --color-forest: #1A6B4F;
+  --color-forest-light: #2D9B72;
+  --color-forest-dark: #0F4232;
   --color-tan: #C97856;
   --color-tan-light: #E8A080;
   --color-cream: #F5FAF7;
@@ -60,36 +60,36 @@
 :root {
   --radius: 0.625rem;
   --background: #ffffff;
-  --foreground: #1B5E42;
+  --foreground: #0F4232;
   --card: #ffffff;
-  --card-foreground: #1B5E42;
+  --card-foreground: #0F4232;
   --popover: #ffffff;
-  --popover-foreground: #1B5E42;
-  --primary: #34A67F;
+  --popover-foreground: #0F4232;
+  --primary: #1A6B4F;
   --primary-foreground: #ffffff;
   --secondary: #D0F0DE;
-  --secondary-foreground: #1B5E42;
+  --secondary-foreground: #0F4232;
   --muted: #E8F8F0;
-  --muted-foreground: #5A8D72;
+  --muted-foreground: #4A7D65;
   --accent: #C97856;
   --accent-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
   --border: #A7DFC1;
   --input: #A7DFC1;
-  --ring: #4ECBA0;
-  --chart-1: #34A67F;
+  --ring: #2D9B72;
+  --chart-1: #1A6B4F;
   --chart-2: #C97856;
-  --chart-3: #4ECBA0;
+  --chart-3: #2D9B72;
   --chart-4: #A7DFC1;
-  --chart-5: #1B5E42;
+  --chart-5: #0F4232;
   --sidebar: #F0F9F4;
-  --sidebar-foreground: #1B5E42;
-  --sidebar-primary: #34A67F;
+  --sidebar-foreground: #0F4232;
+  --sidebar-primary: #1A6B4F;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #D0F0DE;
-  --sidebar-accent-foreground: #1B5E42;
+  --sidebar-accent-foreground: #0F4232;
   --sidebar-border: #A7DFC1;
-  --sidebar-ring: #4ECBA0;
+  --sidebar-ring: #2D9B72;
 }
 
 .dark {
