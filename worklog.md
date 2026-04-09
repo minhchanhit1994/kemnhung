@@ -58,3 +58,36 @@ Stage Summary:
   - Search terms table (rank, keyword, count, results)
   - Recent activity feed with icons and time-ago formatting
 - Analytics data auto-loads when admin switches to the Thống kê tab
+
+---
+Task ID: 3
+Agent: main
+Task: Migrate analytics from file-based JSON to Supabase with auto-setup UI
+
+Work Log:
+- Updated `src/lib/analytics.ts`:
+  - Added `resetSupabaseCache()` function for re-checking table existence
+  - Supabase write functions already existed (writeToSupabasePageView, writeToSupabaseProductView, writeToSupabaseSearchQuery)
+  - Fixed file permission issue: analytics.json owned by root, added `/tmp/kemnhung-analytics` fallback
+  - Dynamic file path resolution with `ensureDataDir()` function
+- Created `src/app/api/analytics/setup/route.ts`:
+  - GET endpoint: checks Supabase config, table existence, returns status (CONNECTED/NEEDS_SETUP/NOT_CONFIGURED)
+  - POST endpoint: attempts auto-setup via Supabase `/pg/query` and RPC, falls back to manual SQL instructions
+  - Full SQL provided: CREATE TABLE page_views, product_views, search_queries with indexes and RLS policies
+- Updated `src/components/admin-panel.tsx`:
+  - Added Database connection status card at top of analytics tab
+  - Shows green badge when connected to Supabase, amber badge when setup needed
+  - "Tự động cài đặt" button for one-click setup attempt
+  - "Copy SQL" button for manual SQL copy
+  - "Mở Supabase SQL Editor" link button
+  - Step-by-step instructions for manual setup
+  - Refresh button to re-check connection status
+- Fixed `Analytics` icon import error (doesn't exist in current lucide-react version) → replaced with `ChartSpline`
+- Full data flow: Try Supabase → File fallback → /tmp fallback
+
+Stage Summary:
+- Analytics system fully migrated to dual-mode: Supabase primary, file fallback
+- Auto-setup mechanism attempts to create tables via Supabase API
+- Clear UI for manual setup if auto-setup fails
+- Connection status visible in admin analytics tab
+- All lint checks pass, code pushed to GitHub
