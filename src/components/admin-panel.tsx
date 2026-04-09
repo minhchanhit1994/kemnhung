@@ -221,6 +221,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   })
   const [recipeMaterials, setRecipeMaterials] = useState<{ materialId: string; quantity: string }[]>([])
   const [newRecipeMaterial, setNewRecipeMaterial] = useState({ materialId: '', quantity: '' })
+  const [recipeSearch, setRecipeSearch] = useState('')
 
   const [productionForm, setProductionForm] = useState({ productId: '', quantity: '', notes: '' })
 
@@ -2213,23 +2214,47 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <div className="flex items-end gap-2 mb-3">
                 <div className="flex-1">
                   <Label className="text-xs">Nguyên liệu</Label>
-                  <Select
-                    value={newRecipeMaterial.materialId}
-                    onValueChange={(v) => setNewRecipeMaterial({ ...newRecipeMaterial, materialId: v })}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Chọn NL..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rawMaterials
-                        .filter((m) => !recipeMaterials.some((rm) => rm.materialId === m.id))
-                        .map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                    <Input
+                      value={newRecipeMaterial.materialId ? (rawMaterials.find(m => m.id === newRecipeMaterial.materialId)?.name || '') : ''}
+                      onChange={(e) => {
+                        const val = e.target.value.toLowerCase()
+                        if (!val) setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
+                        setRecipeSearch(val)
+                      }}
+                      onFocus={() => setRecipeSearch(newRecipeMaterial.materialId ? '' : ' ')}
+                      placeholder="Tìm nguyên liệu..."
+                      className="h-9 text-sm pl-8"
+                    />
+                    {recipeSearch !== '' && (
+                      <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {rawMaterials
+                          .filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()) && !recipeMaterials.some((rm) => rm.materialId === m.id))
+                          .slice(0, 10)
+                          .map(m => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                setNewRecipeMaterial({ ...newRecipeMaterial, materialId: m.id })
+                                setRecipeSearch('')
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-emerald-50 transition-colors flex items-center justify-between text-sm"
+                            >
+                              <span>{m.name}</span>
+                              <span className="text-xs text-gray-500">
+                                {formatPrice(m.unitPrice)}/{m.unit}
+                              </span>
+                            </button>
+                          ))
+                        }
+                        {rawMaterials.filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()) && !recipeMaterials.some((rm) => rm.materialId === m.id)).length === 0 && (
+                          <p className="px-3 py-2 text-sm text-gray-500">Không tìm thấy nguyên liệu</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="w-24">
                   <Label className="text-xs">Số lượng</Label>
