@@ -1,6 +1,6 @@
 'use client'
 
-import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
+import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
@@ -274,26 +274,6 @@ export default function TipTapEditor({ content, onChange, placeholder }: TipTapE
           <LinkIcon className="w-4 h-4" />
         </ToolbarButton>
       </div>
-
-      {/* Bubble Menu (selection menu) */}
-      {editor && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-          <div className="flex items-center gap-0.5 bg-white rounded-lg shadow-lg border border-forest/10 px-1 py-1">
-            <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="In đậm">
-              <Bold className="w-3.5 h-3.5" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="In nghiêng">
-              <Italic className="w-3.5 h-3.5" />
-            </ToolbarButton>
-            <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Gạch chân">
-              <UnderlineIcon className="w-3.5 h-3.5" />
-            </ToolbarButton>
-            <ToolbarButton onClick={setLink} isActive={editor.isActive('link')} title="Liên kết">
-              <LinkIcon className="w-3.5 h-3.5" />
-            </ToolbarButton>
-          </div>
-        </BubbleMenu>
-      )}
 
       {/* Editor Content */}
       <div className="bg-white">
