@@ -116,7 +116,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
 
               {/* Center badge - soft and airy */}
               <div className="relative px-6 py-2">
-                <span className="text-sm md:text-base tracking-widest text-forest-light/70 italic select-none">Handmade with Love</span>
+                <span className="text-lg md:text-xl font-bold tracking-widest text-[#6B4F3A] italic select-none">Handmade with Love</span>
                 {/* Soft dot accents */}
                 <span className="absolute -top-1.5 right-2 w-1 h-1 rounded-full bg-tan/25"></span>
                 <span className="absolute -bottom-1 left-3 w-0.5 h-0.5 rounded-full bg-forest/15"></span>
