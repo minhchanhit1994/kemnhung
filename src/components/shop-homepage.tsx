@@ -95,8 +95,56 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               loading="eager"
             />
           </div>
-          <div className="inline-flex items-center bg-white/60 backdrop-blur-sm border border-white/70 rounded-full px-4 py-2 mb-4">
-            <span className="text-sm text-forest-light">Handmade with Love</span>
+          {/* Handmade with Love - Decorative vine badge */}
+          <div className="mb-4 flex justify-center">
+            <div className="relative inline-flex items-center">
+              {/* Left vine */}
+              <svg className="w-16 md:w-20 -mr-2 md:-mr-3 text-forest/30 flex-shrink-0" viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M75 20 C60 20, 50 8, 35 12 C25 15, 20 25, 8 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                <path d="M75 20 C58 22, 48 32, 32 28 C22 25, 16 16, 5 22" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.6"/>
+                {/* Left small leaves */}
+                <ellipse cx="28" cy="10" rx="4" ry="2.5" transform="rotate(-30 28 10)" fill="currentColor" opacity="0.4"/>
+                <ellipse cx="18" cy="18" rx="3.5" ry="2" transform="rotate(20 18 18)" fill="currentColor" opacity="0.35"/>
+                <ellipse cx="10" cy="15" rx="3" ry="1.8" transform="rotate(-40 10 15)" fill="currentColor" opacity="0.3"/>
+                {/* Tiny flower on left */}
+                <circle cx="6" cy="21" r="2" fill="currentColor" opacity="0.25"/>
+                <circle cx="6" cy="21" r="1" fill="currentColor" opacity="0.4"/>
+              </svg>
+
+              {/* Center badge */}
+              <div className="relative bg-white/50 backdrop-blur-sm border border-white/60 rounded-full px-5 py-2 shadow-sm">
+                <span className="text-sm md:text-base font-medium tracking-wide text-forest-light italic">Handmade with Love</span>
+                {/* Tiny flowers on badge */}
+                <svg className="absolute -top-2 -right-1 w-4 h-4 text-tan/40" viewBox="0 0 16 16" fill="currentColor">
+                  <circle cx="8" cy="8" r="2.5"/>
+                  <ellipse cx="8" cy="4" rx="1.5" ry="2.5"/>
+                  <ellipse cx="8" cy="12" rx="1.5" ry="2.5"/>
+                  <ellipse cx="4" cy="8" rx="2.5" ry="1.5"/>
+                  <ellipse cx="12" cy="8" rx="2.5" ry="1.5"/>
+                  <circle cx="8" cy="8" r="1.5" fill="white" opacity="0.5"/>
+                </svg>
+                <svg className="absolute -bottom-1.5 -left-1 w-3.5 h-3.5 text-forest/20" viewBox="0 0 16 16" fill="currentColor">
+                  <circle cx="8" cy="8" r="2"/>
+                  <ellipse cx="8" cy="4.5" rx="1.2" ry="2"/>
+                  <ellipse cx="8" cy="11.5" rx="1.2" ry="2"/>
+                  <ellipse cx="4.5" cy="8" rx="2" ry="1.2"/>
+                  <ellipse cx="11.5" cy="8" rx="2" ry="1.2"/>
+                </svg>
+              </div>
+
+              {/* Right vine */}
+              <svg className="w-16 md:w-20 -ml-2 md:-ml-3 text-forest/30 flex-shrink-0" viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 20 C20 20, 30 8, 45 12 C55 15, 60 25, 72 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                <path d="M5 20 C22 22, 32 32, 48 28 C58 25, 64 16, 75 22" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.6"/>
+                {/* Right small leaves */}
+                <ellipse cx="52" cy="10" rx="4" ry="2.5" transform="rotate(30 52 10)" fill="currentColor" opacity="0.4"/>
+                <ellipse cx="62" cy="18" rx="3.5" ry="2" transform="rotate(-20 62 18)" fill="currentColor" opacity="0.35"/>
+                <ellipse cx="70" cy="15" rx="3" ry="1.8" transform="rotate(40 70 15)" fill="currentColor" opacity="0.3"/>
+                {/* Tiny flower on right */}
+                <circle cx="74" cy="21" r="2" fill="currentColor" opacity="0.25"/>
+                <circle cx="74" cy="21" r="1" fill="currentColor" opacity="0.4"/>
+              </svg>
+            </div>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight text-forest-dark">
             {nameWords.length > 1 ? (
