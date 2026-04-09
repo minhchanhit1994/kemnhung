@@ -277,7 +277,16 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
+            {/* Top-right action buttons */}
+            {selectedProduct.imageUrl && (
+              <button
+                onClick={() => setZoomedImage(selectedProduct.imageUrl)}
+                className="absolute top-4 right-14 z-10 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white hover:scale-110 transition-all active:scale-95"
+                title="Phóng to ảnh"
+              >
+                <Maximize2 className="w-4 h-4 text-gray-600" />
+              </button>
+            )}
             <button
               onClick={() => setSelectedProduct(null)}
               className="absolute top-4 right-4 z-10 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors"
@@ -296,20 +305,11 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                   poster={selectedProduct.imageUrl || undefined}
                 />
               ) : selectedProduct.imageUrl ? (
-                <div className="relative">
-                  <img
-                    src={selectedProduct.imageUrl}
-                    alt={selectedProduct.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    onClick={() => setZoomedImage(selectedProduct.imageUrl)}
-                    className="absolute bottom-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all active:scale-95"
-                    title="Phóng to ảnh"
-                  >
-                    <Maximize2 className="w-5 h-5 text-gray-700" />
-                  </button>
-                </div>
+                <img
+                  src={selectedProduct.imageUrl}
+                  alt={selectedProduct.name}
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
                   <Gem className="w-20 h-20 text-gray-300" />
