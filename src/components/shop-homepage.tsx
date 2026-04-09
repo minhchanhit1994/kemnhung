@@ -84,14 +84,15 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* === Hero Section === */}
-      <header className="relative overflow-hidden bg-mint">
-        <div className="max-w-5xl mx-auto px-4 py-10 md:py-16 text-center">
+      <header className="relative bg-mint">
+        <div className="max-w-5xl mx-auto px-4 pt-8 pb-10 md:pt-12 md:pb-16 text-center">
           {/* Logo - use object-contain with fixed width to preserve aspect ratio */}
-          <div className="mb-5 flex justify-center">
+          <div className="mb-4 flex justify-center overflow-visible">
             <img
               src="/logo.png"
               alt="Mộc Đậu Decor Logo"
-              className="h-44 md:h-56 w-auto object-contain"
+              className="max-h-52 md:max-h-64 w-auto max-w-full"
+              loading="eager"
             />
           </div>
           <div className="inline-flex items-center bg-white/60 backdrop-blur-sm border border-white/70 rounded-full px-4 py-2 mb-4">
@@ -220,11 +221,11 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
       <footer className="bg-mint text-forest mt-12">
         <div className="max-w-5xl mx-auto px-4 py-10">
           <div className="text-center">
-            <div className="mb-4 flex justify-center">
+            <div className="mb-4 flex justify-center overflow-visible">
               <img
                 src="/logo.png"
                 alt="Mộc Đậu Decor Logo"
-                className="h-28 w-auto object-contain opacity-80"
+                className="max-h-32 w-auto max-w-full opacity-80"
               />
             </div>
             <h3 className="text-xl font-bold text-forest-dark mb-2">
