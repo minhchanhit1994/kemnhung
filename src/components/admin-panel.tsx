@@ -2369,13 +2369,22 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                     <Input
-                      value={newRecipeMaterial.materialId ? (rawMaterials.find(m => m.id === newRecipeMaterial.materialId)?.name || '') : ''}
+                      value={newRecipeMaterial.materialId
+                        ? (rawMaterials.find(m => m.id === newRecipeMaterial.materialId)?.name || '')
+                        : recipeSearch}
                       onChange={(e) => {
-                        const val = e.target.value.toLowerCase()
-                        if (!val) setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
+                        const val = e.target.value
+                        setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
                         setRecipeSearch(val)
                       }}
-                      onFocus={() => setRecipeSearch(newRecipeMaterial.materialId ? '' : ' ')}
+                      onFocus={() => {
+                        if (newRecipeMaterial.materialId) {
+                          setRecipeSearch('')
+                          setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
+                        } else if (recipeSearch === '') {
+                          setRecipeSearch(' ')
+                        }
+                      }}
                       placeholder="Tìm nguyên liệu..."
                       className="h-9 text-sm pl-8"
                     />
@@ -2841,15 +2850,22 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <Input
-                          value={wasteForm.materialId ? (rawMaterials.find(m => m.id === wasteForm.materialId)?.name || '') : ''}
+                          value={wasteForm.materialId
+                            ? (rawMaterials.find(m => m.id === wasteForm.materialId)?.name || '')
+                            : wasteSearch}
                           onChange={(e) => {
-                            const val = e.target.value.toLowerCase()
-                            if (!val) {
-                              setWasteForm(prev => ({ ...prev, materialId: '' }))
-                            }
+                            const val = e.target.value
+                            setWasteForm(prev => ({ ...prev, materialId: '' }))
                             setWasteSearch(val)
                           }}
-                          onFocus={() => setWasteSearch(wasteForm.materialId ? '' : ' ')}
+                          onFocus={() => {
+                            if (wasteForm.materialId) {
+                              setWasteSearch('')
+                              setWasteForm(prev => ({ ...prev, materialId: '' }))
+                            } else if (wasteSearch === '') {
+                              setWasteSearch(' ')
+                            }
+                          }}
                           placeholder="Tìm hoặc chọn nguyên liệu..."
                           className="pl-9"
                         />
