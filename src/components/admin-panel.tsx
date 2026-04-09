@@ -978,12 +978,12 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <span className="hidden sm:inline">Về trang chủ</span>
             </Button>
             <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-emerald-600" />
-              <h1 className="font-bold text-lg">Quản trị</h1>
+              <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
+              <h1 className="font-bold text-lg text-forest">Quản trị</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">
+            <Badge variant="secondary" className="bg-forest/10 text-forest">
               {username}
             </Badge>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onChangePassword} title="Đổi mật khẩu">

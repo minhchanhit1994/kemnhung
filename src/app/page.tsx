@@ -128,7 +128,7 @@ export default function Home() {
   if (!mounted) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-forest" />
       </div>
     )
   }
@@ -167,9 +167,7 @@ export default function Home() {
               >
                 <X className="w-4 h-4 text-gray-400" />
               </button>
-              <div className="mx-auto w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
-                <Shield className="w-7 h-7 text-emerald-600" />
-              </div>
+              <img src="/logo.png" alt="Logo" className="mx-auto h-16 w-auto mb-2" />
               <CardTitle className="text-xl">Quản trị</CardTitle>
               <CardDescription>Đăng nhập để quản lý cửa hàng</CardDescription>
             </CardHeader>
@@ -204,7 +202,7 @@ export default function Home() {
                 )}
                 <Button
                   type="submit"
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  className="w-full bg-forest hover:bg-forest-dark"
                   disabled={loginLoading || !loginUsername || !loginPassword}
                 >
                   {loginLoading ? (
