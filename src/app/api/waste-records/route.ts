@@ -3,12 +3,69 @@ import { supabase } from '@/lib/supabase'
 import { toCamelCase, toSnakeCase } from '@/lib/convert'
 import type { WasteRecord } from '@/lib/types'
 
+let tableChecked = false
+
+async function ensureTableExists(): Promise<boolean> {
+  if (tableChecked) return true
+
+  try {
+    // Quick check if table exists
+    const { error } = await supabase
+      .from('waste_records')
+      .select('id')
+      .limit(1)
+
+    if (!error) {
+      tableChecked = true
+      return true
+    }
+  } catch {
+    // Continue to try creation
+  }
+
+  // Table doesn't exist - try RPC approach
+  try {
+    const { error: rpcError } = await supabase.rpc('exec_sql', {
+      sql: `
+        CREATE TABLE IF NOT EXISTS waste_records (
+          id TEXT PRIMARY KEY,
+          material_id TEXT NOT NULL REFERENCES raw_materials(id),
+          quantity REAL NOT NULL DEFAULT 0,
+          unit_price REAL NOT NULL DEFAULT 0,
+          total_cost REAL NOT NULL DEFAULT 0,
+          note TEXT DEFAULT '',
+          created_at TIMESTAMPTZ DEFAULT now(),
+          updated_at TIMESTAMPTZ DEFAULT now()
+        );
+        ALTER TABLE waste_records ENABLE ROW LEVEL SECURITY;
+        DO $$ BEGIN
+          CREATE POLICY "Allow anon all" ON waste_records FOR ALL USING (true) WITH CHECK (true);
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$;
+      `,
+    })
+
+    if (!rpcError) {
+      tableChecked = true
+      return true
+    }
+  } catch {
+    // RPC not available
+  }
+
+  tableChecked = true
+  return false
+}
+
 export async function GET(request: NextRequest) {
   try {
+    const tableOk = await ensureTableExists()
+    if (!tableOk) {
+      return NextResponse.json([])
+    }
+
     const { searchParams } = new URL(request.url)
     const materialId = searchParams.get('material_id')
-    const fromDate = searchParams.get('from_date')
-    const toDate = searchParams.get('to_date')
 
     let query = supabase
       .from('waste_records')
@@ -17,12 +74,6 @@ export async function GET(request: NextRequest) {
 
     if (materialId) {
       query = query.eq('material_id', materialId)
-    }
-    if (fromDate) {
-      query = query.gte('created_at', fromDate)
-    }
-    if (toDate) {
-      query = query.lte('created_at', toDate + 'T23:59:59')
     }
 
     const { data, error } = await query
@@ -63,6 +114,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const tableOk = await ensureTableExists()
+    if (!tableOk) {
+      return NextResponse.json({
+        error: 'Bảng waste_records chưa được tạo. Vui lòng chạy SQL trong Supabase Dashboard → SQL Editor.',
+      }, { status: 500 })
+    }
+
     const body = await request.json()
     const snakeBody = toSnakeCase(body)
 
@@ -99,13 +157,12 @@ export async function POST(request: NextRequest) {
     }
 
     const totalCost = quantity * unitPrice
-    const newStock = currentStock - quantity
 
     // 2. Deduct material stock
     const { error: updateError } = await supabase
       .from('raw_materials')
       .update({
-        current_stock: newStock,
+        current_stock: currentStock - quantity,
         updated_at: new Date().toISOString(),
       })
       .eq('id', materialId)
@@ -128,15 +185,13 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (insertError) throw insertError
-
-    // Rollback stock if insert fails
-    if (!record) {
+    if (insertError) {
+      // Rollback stock
       await supabase
         .from('raw_materials')
         .update({ current_stock: currentStock, updated_at: new Date().toISOString() })
         .eq('id', materialId)
-      return NextResponse.json({ error: 'Lỗi tạo bản ghi hao hụt' }, { status: 500 })
+      throw insertError
     }
 
     const result = toCamelCase<WasteRecord>(record)
@@ -170,13 +225,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 2. Restore material stock
-    const { data: material, error: materialError } = await supabase
+    const { data: material } = await supabase
       .from('raw_materials')
       .select('id, current_stock')
       .eq('id', record.material_id)
       .single()
 
-    if (!materialError && material) {
+    if (material) {
       await supabase
         .from('raw_materials')
         .update({
