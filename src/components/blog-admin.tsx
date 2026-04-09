@@ -15,9 +15,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, BookOpen, AlertTriangle, CheckCircle,
+  Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, BookOpen, AlertTriangle, CheckCircle, ImagePlus,
 } from 'lucide-react'
 import TipTapEditor from '@/components/tiptap-editor'
+import ImageCropDialog from './image-crop-dialog'
 import type { BlogPost } from '@/lib/types'
 
 const CATEGORIES = [
@@ -59,6 +60,7 @@ export default function BlogAdmin() {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null)
   const [saving, setSaving] = useState(false)
   const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'needs_setup'>('checking')
+  const [coverCropOpen, setCoverCropOpen] = useState(false)
 
   const [form, setForm] = useState({
     title: '',
@@ -423,15 +425,38 @@ export default function BlogAdmin() {
 
             {/* Cover Image */}
             <div>
-              <Label htmlFor="blog-cover">Ảnh bìa (URL)</Label>
-              <Input
-                id="blog-cover"
-                value={form.coverImage}
-                onChange={(e) => setForm(prev => ({ ...prev, coverImage: e.target.value }))}
-                placeholder="https://example.com/anh-bia.jpg"
-              />
+              <Label>Ảnh bìa</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={form.coverImage}
+                  onChange={(e) => setForm(prev => ({ ...prev, coverImage: e.target.value }))}
+                  placeholder="Dán URL ảnh bìa..."
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCoverCropOpen(true)}
+                  className="whitespace-nowrap"
+                >
+                  <ImagePlus className="w-4 h-4 mr-1" />
+                  Upload & Cắt
+                </Button>
+              </div>
               {form.coverImage && (
-                <img src={form.coverImage} alt="Preview" className="mt-2 h-32 rounded-lg object-cover" />
+                <div className="mt-2 relative">
+                  <img src={form.coverImage} alt="Preview" className="h-40 w-full rounded-lg object-cover" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-2 right-2 h-7 px-2 text-xs"
+                    onClick={() => setForm(prev => ({ ...prev, coverImage: '' }))}
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" />
+                    Xóa
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -529,6 +554,13 @@ export default function BlogAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Cover Image Crop Dialog */}
+      <ImageCropDialog
+        open={coverCropOpen}
+        onOpenChange={setCoverCropOpen}
+        onImageReady={(dataUrl) => setForm(prev => ({ ...prev, coverImage: dataUrl }))}
+      />
     </div>
   )
 }
