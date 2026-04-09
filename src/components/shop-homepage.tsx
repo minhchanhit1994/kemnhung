@@ -87,52 +87,45 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   return (
     <div className="min-h-screen bg-cream">
       {/* === Hero Section === */}
-      <header className="relative bg-gradient-to-br from-forest-dark via-forest to-forest-light text-white overflow-hidden">
-        {/* Decorative botanical circles */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-40 h-40 border-2 border-white/30 rounded-full" />
-          <div className="absolute bottom-10 right-10 w-60 h-60 border border-white/20 rounded-full" />
-          <div className="absolute top-1/2 left-1/3 w-24 h-24 border border-white/25 rounded-full" />
-          <div className="absolute top-20 right-1/4 w-16 h-16 border border-white/15 rounded-full" />
-        </div>
-        <div className="relative max-w-5xl mx-auto px-4 py-10 md:py-16 text-center">
+      <header className="relative overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 py-10 md:py-16 text-center">
           {/* Logo */}
           <div className="mb-6 flex justify-center">
             <img
               src="/logo.png"
               alt="Mộc Đậu Decor Logo"
-              className="h-32 md:h-44 w-auto drop-shadow-xl rounded-lg"
+              className="h-36 md:h-48 w-auto"
             />
           </div>
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-5">
-            <Gem className="w-4 h-4 text-tan-light" />
-            <span className="text-sm text-white/80">Handmade with Love</span>
+          <div className="inline-flex items-center gap-2 bg-forest/5 border border-forest/10 rounded-full px-4 py-2 mb-5">
+            <Gem className="w-4 h-4 text-tan" />
+            <span className="text-sm text-forest/60">Handmade with Love</span>
           </div>
-          <h1 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight">
+          <h1 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight text-forest-dark">
             {nameWords.length > 1 ? (
               <>
                 {nameWords.slice(0, -1).join(' ')}{' '}
-                <span className="text-tan-light">{highlightWord}</span>
+                <span className="text-tan">{highlightWord}</span>
               </>
             ) : (
-              <span className="text-tan-light">{shopNameParts}</span>
+              <span className="text-tan">{shopNameParts}</span>
             )}
           </h1>
-          <p className="text-base md:text-lg text-white/75 max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-base md:text-lg text-forest/60 max-w-2xl mx-auto mb-8 leading-relaxed">
             Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="#products" className="inline-flex items-center justify-center gap-2 bg-tan-light hover:bg-tan text-forest-dark font-semibold px-8 py-3 rounded-full transition-colors shadow-lg">
+            <a href="#products" className="inline-flex items-center justify-center gap-2 bg-forest hover:bg-forest-dark text-white font-semibold px-8 py-3 rounded-full transition-colors shadow-md hover:shadow-lg">
               <ShoppingBag className="w-5 h-5" />
               Xem sản phẩm
             </a>
             {zaloLink ? (
-              <a href={zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 px-8 py-3 rounded-full transition-colors">
+              <a href={zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-forest/15 px-8 py-3 rounded-full transition-colors text-forest">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </a>
             ) : (
-              <span className="inline-flex items-center justify-center gap-2 bg-white/10 border border-white/20 px-8 py-3 rounded-full text-white/60 cursor-not-allowed">
+              <span className="inline-flex items-center justify-center gap-2 bg-white border border-forest/10 px-8 py-3 rounded-full text-forest/30 cursor-not-allowed">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </span>
