@@ -95,54 +95,47 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               loading="eager"
             />
           </div>
-          {/* Handmade with Love - Decorative vine badge */}
+          {/* Handmade with Love - Soft decorative vine badge */}
           <div className="mb-4 flex justify-center">
             <div className="relative inline-flex items-center">
-              {/* Left vine */}
-              <svg className="w-16 md:w-20 -mr-2 md:-mr-3 text-forest/30 flex-shrink-0" viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M75 20 C60 20, 50 8, 35 12 C25 15, 20 25, 8 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-                <path d="M75 20 C58 22, 48 32, 32 28 C22 25, 16 16, 5 22" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.6"/>
-                {/* Left small leaves */}
-                <ellipse cx="28" cy="10" rx="4" ry="2.5" transform="rotate(-30 28 10)" fill="currentColor" opacity="0.4"/>
-                <ellipse cx="18" cy="18" rx="3.5" ry="2" transform="rotate(20 18 18)" fill="currentColor" opacity="0.35"/>
-                <ellipse cx="10" cy="15" rx="3" ry="1.8" transform="rotate(-40 10 15)" fill="currentColor" opacity="0.3"/>
-                {/* Tiny flower on left */}
-                <circle cx="6" cy="21" r="2" fill="currentColor" opacity="0.25"/>
-                <circle cx="6" cy="21" r="1" fill="currentColor" opacity="0.4"/>
+              {/* Left vine - soft flowing curves */}
+              <svg className="w-20 md:w-28 -mr-3 md:-mr-5 text-forest/20 flex-shrink-0" viewBox="0 0 100 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M95 18 C78 16, 68 6, 52 10 C40 13, 34 22, 22 18 C16 16, 12 12, 5 14" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" fill="none"/>
+                <path d="M95 20 C76 24, 64 30, 48 26 C38 23, 30 16, 18 20 C14 21, 10 18, 4 20" stroke="currentColor" strokeWidth="0.6" strokeLinecap="round" fill="none" opacity="0.5"/>
+                {/* Delicate curling tendrils */}
+                <path d="M52 10 C48 4, 42 3, 40 7" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" fill="none" opacity="0.4"/>
+                <path d="M22 18 C18 24, 14 26, 12 22" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" fill="none" opacity="0.3"/>
+                {/* Soft leaves - thin and wispy */}
+                <path d="M42 8 C38 4, 36 5, 38 9" stroke="currentColor" strokeWidth="0.5" fill="currentColor" fillOpacity="0.15"/>
+                <path d="M30 14 C26 10, 24 11, 26 15" stroke="currentColor" strokeWidth="0.5" fill="currentColor" fillOpacity="0.12"/>
+                <path d="M16 16 C12 12, 10 13, 12 17" stroke="currentColor" strokeWidth="0.5" fill="currentColor" fillOpacity="0.1"/>
+                {/* Tiny delicate flower bud */}
+                <circle cx="5" cy="13" r="1.5" fill="currentColor" opacity="0.15"/>
+                <circle cx="4" cy="19.5" r="1" fill="currentColor" opacity="0.12"/>
               </svg>
 
-              {/* Center badge */}
-              <div className="relative bg-white/50 backdrop-blur-sm border border-white/60 rounded-full px-5 py-2 shadow-sm">
-                <span className="text-sm md:text-base font-medium tracking-wide text-forest-light italic">Handmade with Love</span>
-                {/* Tiny flowers on badge */}
-                <svg className="absolute -top-2 -right-1 w-4 h-4 text-tan/40" viewBox="0 0 16 16" fill="currentColor">
-                  <circle cx="8" cy="8" r="2.5"/>
-                  <ellipse cx="8" cy="4" rx="1.5" ry="2.5"/>
-                  <ellipse cx="8" cy="12" rx="1.5" ry="2.5"/>
-                  <ellipse cx="4" cy="8" rx="2.5" ry="1.5"/>
-                  <ellipse cx="12" cy="8" rx="2.5" ry="1.5"/>
-                  <circle cx="8" cy="8" r="1.5" fill="white" opacity="0.5"/>
-                </svg>
-                <svg className="absolute -bottom-1.5 -left-1 w-3.5 h-3.5 text-forest/20" viewBox="0 0 16 16" fill="currentColor">
-                  <circle cx="8" cy="8" r="2"/>
-                  <ellipse cx="8" cy="4.5" rx="1.2" ry="2"/>
-                  <ellipse cx="8" cy="11.5" rx="1.2" ry="2"/>
-                  <ellipse cx="4.5" cy="8" rx="2" ry="1.2"/>
-                  <ellipse cx="11.5" cy="8" rx="2" ry="1.2"/>
-                </svg>
+              {/* Center badge - soft and airy */}
+              <div className="relative px-6 py-2">
+                <span className="text-sm md:text-base tracking-widest text-forest-light/70 italic select-none">Handmade with Love</span>
+                {/* Soft dot accents */}
+                <span className="absolute -top-1.5 right-2 w-1 h-1 rounded-full bg-tan/25"></span>
+                <span className="absolute -bottom-1 left-3 w-0.5 h-0.5 rounded-full bg-forest/15"></span>
               </div>
 
-              {/* Right vine */}
-              <svg className="w-16 md:w-20 -ml-2 md:-ml-3 text-forest/30 flex-shrink-0" viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5 20 C20 20, 30 8, 45 12 C55 15, 60 25, 72 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
-                <path d="M5 20 C22 22, 32 32, 48 28 C58 25, 64 16, 75 22" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.6"/>
-                {/* Right small leaves */}
-                <ellipse cx="52" cy="10" rx="4" ry="2.5" transform="rotate(30 52 10)" fill="currentColor" opacity="0.4"/>
-                <ellipse cx="62" cy="18" rx="3.5" ry="2" transform="rotate(-20 62 18)" fill="currentColor" opacity="0.35"/>
-                <ellipse cx="70" cy="15" rx="3" ry="1.8" transform="rotate(40 70 15)" fill="currentColor" opacity="0.3"/>
-                {/* Tiny flower on right */}
-                <circle cx="74" cy="21" r="2" fill="currentColor" opacity="0.25"/>
-                <circle cx="74" cy="21" r="1" fill="currentColor" opacity="0.4"/>
+              {/* Right vine - soft flowing curves (mirror) */}
+              <svg className="w-20 md:w-28 -ml-3 md:-ml-5 text-forest/20 flex-shrink-0" viewBox="0 0 100 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 18 C22 16, 32 6, 48 10 C60 13, 66 22, 78 18 C84 16, 88 12, 95 14" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" fill="none"/>
+                <path d="M5 20 C24 24, 36 30, 52 26 C62 23, 70 16, 82 20 C86 21, 90 18, 96 20" stroke="currentColor" strokeWidth="0.6" strokeLinecap="round" fill="none" opacity="0.5"/>
+                {/* Delicate curling tendrils */}
+                <path d="M48 10 C52 4, 58 3, 60 7" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" fill="none" opacity="0.4"/>
+                <path d="M78 18 C82 24, 86 26, 88 22" stroke="currentColor" strokeWidth="0.5" strokeLinecap="round" fill="none" opacity="0.3"/>
+                {/* Soft leaves - thin and wispy */}
+                <path d="M58 8 C62 4, 64 5, 62 9" stroke="currentColor" strokeWidth="0.5" fill="currentColor" fillOpacity="0.15"/>
+                <path d="M70 14 C74 10, 76 11, 74 15" stroke="currentColor" strokeWidth="0.5" fill="currentColor" fillOpacity="0.12"/>
+                <path d="M84 16 C88 12, 90 13, 88 17" stroke="currentColor" strokeWidth="0.5" fill="currentColor" fillOpacity="0.1"/>
+                {/* Tiny delicate flower bud */}
+                <circle cx="95" cy="13" r="1.5" fill="currentColor" opacity="0.15"/>
+                <circle cx="96" cy="19.5" r="1" fill="currentColor" opacity="0.12"/>
               </svg>
             </div>
           </div>
