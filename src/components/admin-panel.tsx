@@ -84,6 +84,7 @@ import {
   Copy,
   RefreshCw,
   ExternalLink,
+  BookOpen,
 } from 'lucide-react'
 import {
   BarChart,
@@ -105,7 +106,9 @@ import type {
   OrderItem,
   ShopInfo,
   WasteRecord,
+  BlogPost,
 } from '@/lib/types'
+import BlogAdmin from '@/components/blog-admin'
 
 interface AdminPanelProps {
   onBack: () => void
@@ -1161,6 +1164,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <ChartSpline className="w-4 h-4" />
               <span className="hidden sm:inline">Thống kê</span>
             </TabsTrigger>
+            <TabsTrigger value="blog" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Blog</span>
+            </TabsTrigger>
             <TabsTrigger value="materials" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <FlaskConical className="w-4 h-4" />
               <span className="hidden sm:inline">Nguyên liệu</span>
@@ -1459,6 +1466,11 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          {/* ==================== Tab: BLOG ==================== */}
+          <TabsContent value="blog">
+            <BlogAdmin />
           </TabsContent>
 
           {/* ==================== Tab 2: NGUYÊN LIỆU ==================== */}

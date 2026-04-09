@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Search, ShoppingBag, Gem, Video, X, Phone, MessageCircle, Maximize2 } from 'lucide-react'
 import type { Product, ShopInfo } from '@/lib/types'
+import BlogSection from '@/components/blog-section'
 
 interface ShopHomepageProps {
   onAdminClick: () => void
@@ -398,6 +399,9 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
           </div>
         </div>
       </footer>
+
+      {/* === Blog Section === */}
+      <BlogSection />
 
       {/* === Floating Admin Button === */}
       <button

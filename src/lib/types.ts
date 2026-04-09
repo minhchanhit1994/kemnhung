@@ -102,6 +102,23 @@ export interface WasteRecord {
   material?: { name: string; unit: string }
 }
 
+export interface BlogPost {
+  id: string
+  title: string
+  slug: string
+  content: string          // HTML content from TipTap
+  coverImage: string | null
+  excerpt: string          // short description for cards
+  metaTitle: string        // SEO title
+  metaDescription: string  // SEO description
+  keywords: string[]       // SEO keywords
+  category: string         // e.g. "huong-dan", "cam-hung"
+  isPublished: boolean
+  viewCount: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ShopInfo {
   id: string
   shopName: string
