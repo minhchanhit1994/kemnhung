@@ -91,7 +91,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             <img
               src="/logo.png"
               alt="Mộc Đậu Decor Logo"
-              className="h-36 md:h-48 w-auto object-contain"
+              className="h-44 md:h-56 w-auto object-contain"
             />
           </div>
           <div className="inline-flex items-center bg-white/60 backdrop-blur-sm border border-white/70 rounded-full px-4 py-2 mb-4">
@@ -224,7 +224,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <img
                 src="/logo.png"
                 alt="Mộc Đậu Decor Logo"
-                className="h-20 w-auto object-contain opacity-80"
+                className="h-28 w-auto object-contain opacity-80"
               />
             </div>
             <h3 className="text-xl font-bold text-forest-dark mb-2">
