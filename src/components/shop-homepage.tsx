@@ -296,7 +296,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                   poster={selectedProduct.imageUrl || undefined}
                 />
               ) : selectedProduct.imageUrl ? (
-                <div className="relative group">
+                <div className="relative">
                   <img
                     src={selectedProduct.imageUrl}
                     alt={selectedProduct.name}
@@ -304,7 +304,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                   />
                   <button
                     onClick={() => setZoomedImage(selectedProduct.imageUrl)}
-                    className="absolute bottom-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+                    className="absolute bottom-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all active:scale-95"
                     title="Phóng to ảnh"
                   >
                     <Maximize2 className="w-5 h-5 text-gray-700" />
