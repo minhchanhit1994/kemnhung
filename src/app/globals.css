@@ -43,51 +43,53 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Brand colors */
+/* Brand colors - Mint green palette */
 @theme {
-  --color-forest: #2D4F3F;
-  --color-forest-light: #3A6B55;
-  --color-forest-dark: #1F3A2D;
+  --color-forest: #2D6A4F;
+  --color-forest-light: #40916C;
+  --color-forest-dark: #1B4332;
   --color-tan: #C4A57B;
   --color-tan-light: #E8C47E;
   --color-cream: #f7f7ec;
   --color-sage: #8B9A6A;
-  --color-sage-pastel: #E2E8D4;
+  --color-mint: #D0F0DE;
+  --color-mint-light: #E8F8F0;
+  --color-mint-dark: #A7DFC1;
 }
 
 :root {
   --radius: 0.625rem;
   --background: #ffffff;
-  --foreground: #2D4F3F;
+  --foreground: #1B4332;
   --card: #ffffff;
-  --card-foreground: #2D4F3F;
+  --card-foreground: #1B4332;
   --popover: #ffffff;
-  --popover-foreground: #2D4F3F;
-  --primary: #2D4F3F;
+  --popover-foreground: #1B4332;
+  --primary: #2D6A4F;
   --primary-foreground: #ffffff;
-  --secondary: #E2E8D4;
-  --secondary-foreground: #2D4F3F;
-  --muted: #E2E8D4;
-  --muted-foreground: #6B7F72;
+  --secondary: #D0F0DE;
+  --secondary-foreground: #1B4332;
+  --muted: #E8F8F0;
+  --muted-foreground: #5A7D6A;
   --accent: #C4A57B;
-  --accent-foreground: #2D4F3F;
+  --accent-foreground: #1B4332;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #c8d4b8;
-  --input: #c8d4b8;
-  --ring: #3A6B55;
-  --chart-1: #2D4F3F;
+  --border: #B8E0CC;
+  --input: #B8E0CC;
+  --ring: #40916C;
+  --chart-1: #2D6A4F;
   --chart-2: #C4A57B;
-  --chart-3: #8B9A6A;
-  --chart-4: #E8C47E;
-  --chart-5: #3A6B55;
-  --sidebar: #f0f2eb;
-  --sidebar-foreground: #2D4F3F;
-  --sidebar-primary: #2D4F3F;
+  --chart-3: #40916C;
+  --chart-4: #A7DFC1;
+  --chart-5: #1B4332;
+  --sidebar: #F0F9F4;
+  --sidebar-foreground: #1B4332;
+  --sidebar-primary: #2D6A4F;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #E2E8D4;
-  --sidebar-accent-foreground: #2D4F3F;
-  --sidebar-border: #c8d4b8;
-  --sidebar-ring: #3A6B55;
+  --sidebar-accent: #D0F0DE;
+  --sidebar-accent-foreground: #1B4332;
+  --sidebar-border: #B8E0CC;
+  --sidebar-ring: #40916C;
 }
 
 .dark {

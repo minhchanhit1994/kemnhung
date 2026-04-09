@@ -12,7 +12,6 @@ interface ShopHomepageProps {
   onAdminClick: () => void
 }
 
-// Default fallback when shop info hasn't loaded yet
 const DEFAULT_SHOP: ShopInfo = {
   id: '',
   shopName: 'Kẽm Nhung',
@@ -74,12 +73,10 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
     p.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Build Zalo link from zalo or phone number
   const zaloNumber = shopInfo.zalo || shopInfo.phone
   const zaloLink = zaloNumber ? `https://zalo.me/${zaloNumber.replace(/^0/, '')}` : null
   const displayPhone = shopInfo.phone || shopInfo.zalo || ''
 
-  // Split shop name for highlighted word
   const shopNameParts = shopInfo.shopName || 'Kẽm Nhung'
   const nameWords = shopNameParts.trim().split(/\s+/)
   const highlightWord = nameWords.length > 0 ? nameWords[nameWords.length - 1] : ''
@@ -87,14 +84,14 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* === Hero Section === */}
-      <header className="relative overflow-hidden bg-sage-pastel">
+      <header className="relative overflow-hidden bg-mint">
         <div className="max-w-5xl mx-auto px-4 py-10 md:py-16 text-center">
-          {/* Logo */}
+          {/* Logo - use object-contain with fixed width to preserve aspect ratio */}
           <div className="mb-5 flex justify-center">
             <img
               src="/logo.png"
               alt="Mộc Đậu Decor Logo"
-              className="h-36 md:h-48 w-auto drop-shadow-md"
+              className="h-36 md:h-48 w-auto object-contain"
             />
           </div>
           <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-white/70 rounded-full px-4 py-2 mb-4">
@@ -136,7 +133,6 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
 
       {/* === Products Section === */}
       <section id="products" className="max-w-6xl mx-auto px-4 py-12">
-        {/* Search Bar */}
         <div className="max-w-md mx-auto mb-10">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-forest/40" />
@@ -144,12 +140,11 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm kiếm sản phẩm..."
-              className="pl-10 h-11 rounded-full border-forest/15 bg-sage-pastel/30 shadow-sm focus:ring-forest/30"
+              className="pl-10 h-11 rounded-full border-mint-dark bg-mint-light shadow-sm focus:ring-forest/30"
             />
           </div>
         </div>
 
-        {/* Section Title */}
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold text-forest-dark mb-2">
             Sản phẩm của chúng tôi
@@ -157,7 +152,6 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
           <div className="w-20 h-1 bg-tan mx-auto rounded-full" />
         </div>
 
-        {/* Products Grid */}
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -180,10 +174,10 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             {filteredProducts.map((product) => (
               <Card
                 key={product.id}
-                className="group border shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden bg-white rounded-2xl border-sage-pastel/50"
+                className="group border shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden bg-white rounded-2xl border-mint-dark/40"
                 onClick={() => setSelectedProduct(product)}
               >
-                <div className="relative aspect-square bg-sage-pastel/20 overflow-hidden rounded-t-2xl">
+                <div className="relative aspect-square bg-mint-light overflow-hidden rounded-t-2xl">
                   {product.imageUrl ? (
                     <img
                       src={product.imageUrl}
@@ -191,7 +185,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sage-pastel/30 to-tan/10">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-mint-light to-tan/10">
                       <Gem className="w-12 h-12 text-forest/20" />
                     </div>
                   )}
@@ -224,15 +218,14 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
       </section>
 
       {/* === Footer === */}
-      <footer className="bg-sage-pastel text-forest/70 mt-12">
+      <footer className="bg-mint text-forest/70 mt-12">
         <div className="max-w-5xl mx-auto px-4 py-10">
           <div className="text-center">
-            {/* Logo in footer */}
             <div className="mb-4 flex justify-center">
               <img
                 src="/logo.png"
                 alt="Mộc Đậu Decor Logo"
-                className="h-20 w-auto opacity-80"
+                className="h-20 w-auto object-contain opacity-80"
               />
             </div>
             <h3 className="text-xl font-bold text-forest-dark mb-2">
@@ -266,7 +259,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
         </div>
       </footer>
 
-      {/* === Floating Admin Shield Button === */}
+      {/* === Floating Admin Button === */}
       <button
         onClick={onAdminClick}
         className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-forest/80 hover:bg-forest text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 backdrop-blur-sm"
@@ -288,7 +281,6 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Top-right action buttons */}
             {selectedProduct.imageUrl && (
               <button
                 onClick={() => setZoomedImage(selectedProduct.imageUrl)}
@@ -305,8 +297,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <X className="w-4 h-4 text-forest" />
             </button>
 
-            {/* Product Image / Video */}
-            <div className="relative aspect-square bg-sage-pastel/20 rounded-t-2xl overflow-hidden">
+            <div className="relative aspect-square bg-mint-light rounded-t-2xl overflow-hidden">
               {selectedProduct.videoUrl ? (
                 <video
                   src={selectedProduct.videoUrl}
@@ -322,7 +313,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-sage-pastel/30 to-tan/10">
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-mint-light to-tan/10">
                   <Gem className="w-20 h-20 text-forest/20" />
                 </div>
               )}
@@ -333,7 +324,6 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               </div>
             </div>
 
-            {/* Product Info */}
             <div className="p-5 md:p-6">
               <h2 className="text-xl md:text-2xl font-bold text-forest-dark mb-2">
                 {selectedProduct.name}
@@ -374,6 +364,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
           </div>
         </div>
       )}
+
       {/* === Image Zoom Fullscreen === */}
       {zoomedImage && (
         <div
