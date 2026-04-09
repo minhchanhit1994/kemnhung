@@ -87,17 +87,17 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   return (
     <div className="min-h-screen bg-cream">
       {/* === Hero Section === */}
-      <header className="relative overflow-hidden">
+      <header className="relative overflow-hidden bg-sage-pastel">
         <div className="max-w-5xl mx-auto px-4 py-10 md:py-16 text-center">
           {/* Logo */}
           <div className="mb-6 flex justify-center">
             <img
               src="/logo.png"
               alt="Mộc Đậu Decor Logo"
-              className="h-36 md:h-48 w-auto"
+              className="h-36 md:h-48 w-auto drop-shadow-md"
             />
           </div>
-          <div className="inline-flex items-center gap-2 bg-forest/5 border border-forest/10 rounded-full px-4 py-2 mb-5">
+          <div className="inline-flex items-center gap-2 bg-white/50 backdrop-blur-sm border border-white/60 rounded-full px-4 py-2 mb-5">
             <Gem className="w-4 h-4 text-tan" />
             <span className="text-sm text-forest/60">Handmade with Love</span>
           </div>
@@ -111,7 +111,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <span className="text-tan">{shopNameParts}</span>
             )}
           </h1>
-          <p className="text-base md:text-lg text-forest/60 max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-base md:text-lg text-forest/50 max-w-2xl mx-auto mb-8 leading-relaxed">
             Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -120,12 +120,12 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               Xem sản phẩm
             </a>
             {zaloLink ? (
-              <a href={zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-forest/15 px-8 py-3 rounded-full transition-colors text-forest">
+              <a href={zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </a>
             ) : (
-              <span className="inline-flex items-center justify-center gap-2 bg-white border border-forest/10 px-8 py-3 rounded-full text-forest/30 cursor-not-allowed">
+              <span className="inline-flex items-center justify-center gap-2 bg-white/40 border border-white/50 px-8 py-3 rounded-full text-forest/30 cursor-not-allowed">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </span>

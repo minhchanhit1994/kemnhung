@@ -49,6 +49,7 @@
   --color-tan-light: oklch(0.811 0.093 86);
   --color-cream: oklch(0.976 0.007 100);
   --color-sage: oklch(0.637 0.062 119);
+  --color-sage-pastel: oklch(0.915 0.028 133);
 }
 
 :root {
