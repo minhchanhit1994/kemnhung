@@ -1005,19 +1005,19 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 flex-wrap h-auto gap-1 bg-white">
-            <TabsTrigger value="dashboard" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
+            <TabsTrigger value="dashboard" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Tổng quan</span>
             </TabsTrigger>
-            <TabsTrigger value="materials" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
+            <TabsTrigger value="materials" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <FlaskConical className="w-4 h-4" />
               <span className="hidden sm:inline">Nguyên liệu</span>
             </TabsTrigger>
-            <TabsTrigger value="production" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
+            <TabsTrigger value="production" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <Hammer className="w-4 h-4" />
               <span className="hidden sm:inline">Thành phẩm</span>
             </TabsTrigger>
-            <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
+            <TabsTrigger value="orders" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <ClipboardList className="w-4 h-4" />
               <span className="hidden sm:inline">Đơn hàng</span>
             </TabsTrigger>
@@ -1025,7 +1025,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <Ban className="w-4 h-4" />
               <span className="hidden sm:inline">Hao hụt</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800">
+            <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Cài đặt</span>
             </TabsTrigger>
@@ -1036,14 +1036,14 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             <div className="space-y-6">
               {/* Financial Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="border-l-4 border-l-emerald-500">
+                <Card className="border-l-4 border-l-forest">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs text-muted-foreground">Tổng doanh thu</p>
-                        <p className="text-xl font-bold text-emerald-700">{formatPrice(stats?.totalRevenue ?? 0)}</p>
+                        <p className="text-xl font-bold text-forest">{formatPrice(stats?.totalRevenue ?? 0)}</p>
                       </div>
-                      <DollarSign className="w-8 h-8 text-emerald-500" />
+                      <DollarSign className="w-8 h-8 text-forest-light" />
                     </div>
                   </CardContent>
                 </Card>
@@ -1069,17 +1069,17 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                     </div>
                   </CardContent>
                 </Card>
-                <Card className={`border-l-4 ${(stats?.totalProfit ?? 0) >= 0 ? 'border-l-emerald-500' : 'border-l-red-500'}`}>
+                <Card className={`border-l-4 ${(stats?.totalProfit ?? 0) >= 0 ? 'border-l-forest' : 'border-l-red-500'}`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs text-muted-foreground">Lợi nhuận</p>
-                        <p className={`text-xl font-bold ${(stats?.totalProfit ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                        <p className={`text-xl font-bold ${(stats?.totalProfit ?? 0) >= 0 ? 'text-forest' : 'text-red-700'}`}>
                           {formatPrice(stats?.totalProfit ?? 0)}
                         </p>
                       </div>
                       {(stats?.totalProfit ?? 0) >= 0 ? (
-                        <TrendingUp className="w-8 h-8 text-emerald-500" />
+                        <TrendingUp className="w-8 h-8 text-forest-light" />
                       ) : (
                         <TrendingDown className="w-8 h-8 text-red-500" />
                       )}
@@ -1093,7 +1093,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-emerald-500" />
+                      <BarChart3 className="w-5 h-5 text-forest-light" />
                       Biểu đồ tài chính theo tháng
                     </CardTitle>
                     <CardDescription>Doanh thu, vốn nhập, lợi nhuận</CardDescription>
@@ -1142,15 +1142,15 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-emerald-500">
+                <Card className="border-l-4 border-l-forest">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs text-muted-foreground">Thành phẩm</p>
                         <p className="text-2xl font-bold">{stats?.totalProducts ?? products.length}</p>
-                        <p className="text-xs text-emerald-600">{stats?.activeProducts ?? 0} đang bán</p>
+                        <p className="text-xs text-forest">{stats?.activeProducts ?? 0} đang bán</p>
                       </div>
-                      <Package className="w-8 h-8 text-emerald-500" />
+                      <Package className="w-8 h-8 text-forest-light" />
                     </div>
                   </CardContent>
                 </Card>
@@ -1246,7 +1246,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                             {orders.slice(0, 5).map((order) => (
                               <TableRow key={order.id} className="cursor-pointer" onClick={() => viewOrderDetail(order)}>
                                 <TableCell className="font-medium">{order.customerName}</TableCell>
-                                <TableCell className="text-right text-emerald-700 font-medium">
+                                <TableCell className="text-right text-forest font-medium">
                                   {formatPrice(order.totalAmount)}
                                 </TableCell>
                                 <TableCell>
@@ -1333,7 +1333,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                           onChange={(e) => setSearch(e.target.value)}
                         />
                       </div>
-                      <Button onClick={() => openMaterialDialog()} className="bg-emerald-600 hover:bg-emerald-700">
+                      <Button onClick={() => openMaterialDialog()} className="bg-forest hover:bg-forest-dark">
                         <Plus className="w-4 h-4 mr-1" />
                         Thêm NL
                       </Button>
@@ -1375,7 +1375,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                         ? 'bg-red-100 text-red-800'
                                         : isLow
                                         ? 'bg-amber-100 text-amber-800'
-                                        : 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-mint-dark/30 text-forest-dark'
                                     }
                                   >
                                     {material.currentStock} {material.unit}
@@ -1418,12 +1418,12 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <ArrowDownToLine className="w-5 h-5 text-emerald-500" />
+                        <ArrowDownToLine className="w-5 h-5 text-forest-light" />
                         Nhập kho &amp; Lịch sử
                       </CardTitle>
                       <CardDescription>Lịch sử nhập/xuất nguyên liệu</CardDescription>
                     </div>
-                    <Button onClick={openImportDialog} className="bg-emerald-600 hover:bg-emerald-700">
+                    <Button onClick={openImportDialog} className="bg-forest hover:bg-forest-dark">
                       <ArrowDownToLine className="w-4 h-4 mr-1" />
                       Nhập kho
                     </Button>
@@ -1462,7 +1462,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                 <Badge
                                   className={
                                     tx.type === 'import'
-                                      ? 'bg-emerald-100 text-emerald-800'
+                                      ? 'bg-mint-dark/30 text-forest-dark'
                                       : tx.type === 'export'
                                       ? 'bg-red-100 text-red-800'
                                       : 'bg-blue-100 text-blue-800'
@@ -1506,7 +1506,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Package className="w-5 h-5 text-emerald-500" />
+                        <Package className="w-5 h-5 text-forest-light" />
                         Danh sách thành phẩm
                       </CardTitle>
                       <CardDescription>{products.length} sản phẩm</CardDescription>
@@ -1521,7 +1521,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                           onChange={(e) => setProductSearch(e.target.value)}
                         />
                       </div>
-                      <Button onClick={() => openProductDialog()} className="bg-emerald-600 hover:bg-emerald-700">
+                      <Button onClick={() => openProductDialog()} className="bg-forest hover:bg-forest-dark">
                         <Plus className="w-4 h-4 mr-1" />
                         Thêm SP
                       </Button>
@@ -1577,7 +1577,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                 <TableCell className="text-right text-muted-foreground">
                                   {product.costPrice > 0 ? formatPrice(product.costPrice) : '-'}
                                 </TableCell>
-                                <TableCell className="text-right text-emerald-700 font-semibold">
+                                <TableCell className="text-right text-forest font-semibold">
                                   {formatPrice(product.price)}
                                 </TableCell>
                                 <TableCell className="text-center">
@@ -1595,7 +1595,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                 <TableCell className="text-center">
                                   <Badge
                                     variant={product.isActive ? 'default' : 'outline'}
-                                    className={product.isActive ? 'bg-emerald-100 text-emerald-800' : ''}
+                                    className={product.isActive ? 'bg-mint-dark/30 text-forest-dark' : ''}
                                   >
                                     {product.isActive ? 'Đang bán' : 'Ẩn'}
                                   </Badge>
@@ -1641,7 +1641,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       </CardTitle>
                       <CardDescription>{productionOrders.length} phiếu sản xuất</CardDescription>
                     </div>
-                    <Button onClick={openProductionDialog} className="bg-emerald-600 hover:bg-emerald-700">
+                    <Button onClick={openProductionDialog} className="bg-forest hover:bg-forest-dark">
                       <Hammer className="w-4 h-4 mr-1" />
                       Sản xuất
                     </Button>
@@ -1720,7 +1720,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                           onChange={(e) => setOrderSearch(e.target.value)}
                         />
                       </div>
-                      <Button onClick={openOrderDialog} className="bg-emerald-600 hover:bg-emerald-700">
+                      <Button onClick={openOrderDialog} className="bg-forest hover:bg-forest-dark">
                         <Plus className="w-4 h-4 mr-1" />
                         Tạo đơn
                       </Button>
@@ -1756,7 +1756,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                               </TableCell>
                               <TableCell className="font-medium">{order.customerName}</TableCell>
                               <TableCell className="hidden sm:table-cell text-muted-foreground">{order.customerPhone || '-'}</TableCell>
-                              <TableCell className="text-right text-emerald-700 font-semibold">
+                              <TableCell className="text-right text-forest font-semibold">
                                 {formatPrice(order.totalAmount)}
                               </TableCell>
                               <TableCell>
@@ -1876,7 +1876,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             <Button variant="outline" onClick={() => setMaterialDialogOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={saveMaterial} disabled={saving || !materialForm.name} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={saveMaterial} disabled={saving || !materialForm.name} className="bg-forest hover:bg-forest-dark">
               {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
               {editingMaterial ? 'Cập nhật' : 'Thêm'}
             </Button>
@@ -2009,7 +2009,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             <Button
               onClick={saveImport}
               disabled={saving || !importForm.materialId || !importForm.quantity}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-forest hover:bg-forest-dark"
             >
               {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
               Nhập kho
@@ -2179,7 +2179,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             {/* === CÔNG THỨC (Recipe) === */}
             <div className="border rounded-lg p-4 bg-gray-50">
               <div className="flex items-center gap-2 mb-3">
-                <Calculator className="w-5 h-5 text-emerald-600" />
+                <Calculator className="w-5 h-5 text-forest" />
                 <h3 className="font-semibold text-sm">CÔNG THỨC</h3>
               </div>
 
@@ -2240,7 +2240,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                 setNewRecipeMaterial({ ...newRecipeMaterial, materialId: m.id })
                                 setRecipeSearch('')
                               }}
-                              className="w-full text-left px-3 py-2 hover:bg-emerald-50 transition-colors flex items-center justify-between text-sm"
+                              className="w-full text-left px-3 py-2 hover:bg-mint-light transition-colors flex items-center justify-between text-sm"
                             >
                               <span>{m.name}</span>
                               <span className="text-xs text-gray-500">
@@ -2281,7 +2281,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
 
               <div className="flex items-center justify-between bg-white rounded-md p-3 border">
                 <span className="font-semibold text-sm">TỔNG GIÁ VỐN</span>
-                <span className="font-bold text-emerald-600 text-lg">{formatPrice(recipeTotalCost)}</span>
+                <span className="font-bold text-forest text-lg">{formatPrice(recipeTotalCost)}</span>
               </div>
             </div>
           </div>
@@ -2292,7 +2292,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             <Button
               onClick={saveProduct}
               disabled={saving || !productForm.name}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-forest hover:bg-forest-dark"
             >
               {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
               {editingProduct ? 'Cập nhật' : 'Thêm SP'}
@@ -2338,7 +2338,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             {selectedProductionRecipe.length > 0 && Number(productionForm.quantity) > 0 && (
               <div className="border rounded-lg p-3 bg-gray-50">
                 <div className="flex items-center gap-2 mb-2">
-                  <FlaskConical className="w-4 h-4 text-emerald-600" />
+                  <FlaskConical className="w-4 h-4 text-forest" />
                   <span className="text-sm font-semibold">Kiểm tra nguyên liệu</span>
                 </div>
                 <div className="space-y-1">
@@ -2348,7 +2348,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                         <span className="font-medium">{item.materialName}</span>
                         <span className="text-muted-foreground">Cần: {item.needed} {item.unit}</span>
                       </div>
-                      <span className={item.sufficient ? 'text-emerald-600 font-medium' : 'text-red-600 font-medium'}>
+                      <span className={item.sufficient ? 'text-forest font-medium' : 'text-red-600 font-medium'}>
                         Hiện có: {item.available} {item.unit}
                       </span>
                     </div>
@@ -2386,7 +2386,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 !productionForm.quantity ||
                 selectedProductionRecipe.length === 0
               }
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-forest hover:bg-forest-dark"
             >
               {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
               <Hammer className="w-4 h-4 mr-1" />
@@ -2450,7 +2450,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             {/* Order Items */}
             <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
               <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Package className="w-4 h-4 text-emerald-600" />
+                <Package className="w-4 h-4 text-forest" />
                 Sản phẩm
               </h3>
 
@@ -2527,9 +2527,9 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
 
             {/* Order Total */}
             {orderItems.length > 0 && (
-              <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                <span className="font-semibold text-emerald-800">TỔNG TIỀN</span>
-                <span className="font-bold text-emerald-700 text-xl">{formatPrice(orderTotal)}</span>
+              <div className="flex items-center justify-between bg-mint-light border border-mint-dark rounded-lg p-4">
+                <span className="font-semibold text-forest-dark">TỔNG TIỀN</span>
+                <span className="font-bold text-forest text-xl">{formatPrice(orderTotal)}</span>
               </div>
             )}
           </div>
@@ -2540,7 +2540,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             <Button
               onClick={saveOrder}
               disabled={saving || !orderForm.customerName || orderItems.length === 0}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-forest hover:bg-forest-dark"
             >
               {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
               <ShoppingCart className="w-4 h-4 mr-1" />
@@ -2616,8 +2616,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                     ))}
                   </TableBody>
                 </Table>
-                <div className="flex justify-end mt-2 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <span className="font-bold text-emerald-700 text-lg">
+                <div className="flex justify-end mt-2 p-3 bg-mint-light rounded-lg border border-mint-dark">
+                  <span className="font-bold text-forest text-lg">
                     Tổng: {formatPrice(selectedOrder.totalAmount)}
                   </span>
                 </div>
@@ -2628,7 +2628,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
-                    className="flex-1 gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    className="flex-1 gap-2 border-mint-dark text-forest hover:bg-mint-light"
                     onClick={() => printInvoice(selectedOrder)}
                   >
                     <Printer className="w-4 h-4" />
@@ -2641,7 +2641,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               {selectedOrder.status === 'pending' && (
                 <div className="flex items-center gap-2 pt-2">
                   <Button
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                    className="flex-1 bg-forest hover:bg-forest-dark"
                     disabled={saving}
                     onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
                   >
@@ -2713,7 +2713,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                     setWasteForm(prev => ({ ...prev, materialId: m.id }))
                                     setWasteSearch('')
                                   }}
-                                  className="w-full text-left px-3 py-2 hover:bg-emerald-50 transition-colors flex items-center justify-between text-sm"
+                                  className="w-full text-left px-3 py-2 hover:bg-mint-light transition-colors flex items-center justify-between text-sm"
                                 >
                                   <span>{m.name}</span>
                                   <span className="text-xs text-gray-500">
@@ -2892,7 +2892,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Store className="w-5 h-5 text-emerald-500" />
+                    <Store className="w-5 h-5 text-forest-light" />
                     Thông tin cửa hàng
                   </CardTitle>
                   <CardDescription>
@@ -2971,7 +2971,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                         <p><span className="text-muted-foreground">Tên shop:</span> <span className="font-medium">{settingsForm.shopName || 'Kẽm Nhung'}</span></p>
                         <p><span className="text-muted-foreground">SĐT:</span> {settingsForm.phone || '—'}</p>
                         <p><span className="text-muted-foreground">Zalo:</span> {settingsForm.zalo || settingsForm.phone ? (
-                          <a href={`https://zalo.me/${(settingsForm.zalo || settingsForm.phone).replace(/^0/, '')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline ml-1">Mở chat Zalo</a>
+                          <a href={`https://zalo.me/${(settingsForm.zalo || settingsForm.phone).replace(/^0/, '')}`} target="_blank" rel="noopener noreferrer" className="text-forest hover:underline ml-1">Mở chat Zalo</a>
                         ) : <span className="text-amber-600 ml-1">Chưa cấu hình</span>}</p>
                         <p><span className="text-muted-foreground">Địa chỉ:</span> {settingsForm.address || '—'}</p>
                       </div>
@@ -2979,7 +2979,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                   )}
 
                   <div className="flex items-center gap-3 pt-2">
-                    <Button onClick={saveSettings} disabled={settingsSaving} className="bg-emerald-600 hover:bg-emerald-700">
+                    <Button onClick={saveSettings} disabled={settingsSaving} className="bg-forest hover:bg-forest-dark">
                       {settingsSaving ? (
                         <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang lưu...</>
                       ) : (
@@ -2987,7 +2987,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                       )}
                     </Button>
                     {settingsSaved && (
-                      <span className="flex items-center gap-1 text-emerald-600 text-sm">
+                      <span className="flex items-center gap-1 text-forest text-sm">
                         <CheckCircle2 className="w-4 h-4" />
                         Đã lưu thành công! Trang chủ sẽ cập nhật ngay.
                       </span>

@@ -43,15 +43,15 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Brand colors - Mint green palette */
+/* Brand colors - Mint green palette (harmonious) */
 @theme {
-  --color-forest: #2D6A4F;
-  --color-forest-light: #40916C;
-  --color-forest-dark: #1B4332;
-  --color-tan: #C4A57B;
-  --color-tan-light: #E8C47E;
-  --color-cream: #f7f7ec;
-  --color-sage: #8B9A6A;
+  --color-forest: #34A67F;
+  --color-forest-light: #4ECBA0;
+  --color-forest-dark: #1B5E42;
+  --color-tan: #C97856;
+  --color-tan-light: #E8A080;
+  --color-cream: #F5FAF7;
+  --color-sage: #5BB8A0;
   --color-mint: #D0F0DE;
   --color-mint-light: #E8F8F0;
   --color-mint-dark: #A7DFC1;
@@ -60,36 +60,36 @@
 :root {
   --radius: 0.625rem;
   --background: #ffffff;
-  --foreground: #1B4332;
+  --foreground: #1B5E42;
   --card: #ffffff;
-  --card-foreground: #1B4332;
+  --card-foreground: #1B5E42;
   --popover: #ffffff;
-  --popover-foreground: #1B4332;
-  --primary: #2D6A4F;
+  --popover-foreground: #1B5E42;
+  --primary: #34A67F;
   --primary-foreground: #ffffff;
   --secondary: #D0F0DE;
-  --secondary-foreground: #1B4332;
+  --secondary-foreground: #1B5E42;
   --muted: #E8F8F0;
-  --muted-foreground: #5A7D6A;
-  --accent: #C4A57B;
-  --accent-foreground: #1B4332;
+  --muted-foreground: #5A8D72;
+  --accent: #C97856;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #B8E0CC;
-  --input: #B8E0CC;
-  --ring: #40916C;
-  --chart-1: #2D6A4F;
-  --chart-2: #C4A57B;
-  --chart-3: #40916C;
+  --border: #A7DFC1;
+  --input: #A7DFC1;
+  --ring: #4ECBA0;
+  --chart-1: #34A67F;
+  --chart-2: #C97856;
+  --chart-3: #4ECBA0;
   --chart-4: #A7DFC1;
-  --chart-5: #1B4332;
+  --chart-5: #1B5E42;
   --sidebar: #F0F9F4;
-  --sidebar-foreground: #1B4332;
-  --sidebar-primary: #2D6A4F;
+  --sidebar-foreground: #1B5E42;
+  --sidebar-primary: #34A67F;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #D0F0DE;
-  --sidebar-accent-foreground: #1B4332;
-  --sidebar-border: #B8E0CC;
-  --sidebar-ring: #40916C;
+  --sidebar-accent-foreground: #1B5E42;
+  --sidebar-border: #A7DFC1;
+  --sidebar-ring: #4ECBA0;
 }
 
 .dark {

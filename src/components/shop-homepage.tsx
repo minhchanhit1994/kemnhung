@@ -94,8 +94,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               className="h-36 md:h-48 w-auto object-contain"
             />
           </div>
-          <div className="inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm border border-white/70 rounded-full px-4 py-2 mb-4">
-            <Gem className="w-4 h-4 text-tan" />
+          <div className="inline-flex items-center bg-white/60 backdrop-blur-sm border border-white/70 rounded-full px-4 py-2 mb-4">
             <span className="text-sm text-forest/60">Handmade with Love</span>
           </div>
           <h1 className="text-3xl md:text-5xl font-bold mb-3 tracking-tight text-forest-dark">
