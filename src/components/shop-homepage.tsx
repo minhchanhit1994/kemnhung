@@ -328,7 +328,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 {selectedProduct.name}
               </h2>
               {selectedProduct.description && (
-                <p className="text-gray-500 mb-4 leading-relaxed">{selectedProduct.description}</p>
+                <p className="text-gray-500 mb-4 leading-relaxed whitespace-pre-line">{selectedProduct.description}</p>
               )}
 
               <div className="flex items-end justify-between mb-6">
