@@ -235,7 +235,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               Xem sản phẩm
             </a>
             {zaloLink ? (
-              <a href={zaloLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
+              <a href={zaloLink} className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </a>
@@ -361,8 +361,6 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <div className="flex items-center justify-center gap-4 text-sm mb-2">
                 <a
                   href={zaloLink || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex items-center gap-1.5 hover:text-tan transition-colors"
                 >
                   <Phone className="w-4 h-4" />
@@ -465,8 +463,6 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               {zaloLink ? (
                 <a
                   href={zaloLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full bg-forest hover:bg-forest-dark text-white font-semibold py-3 rounded-xl transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" />
