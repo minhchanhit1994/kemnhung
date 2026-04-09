@@ -15,6 +15,7 @@ import {
   Undo, Redo, Minus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import ImageCropDialog from './image-crop-dialog'
 
 interface TipTapEditorProps {
   content: string
@@ -130,14 +131,28 @@ export default function TipTapEditor({ content, onChange, placeholder }: TipTapE
     },
   })
 
-  if (!editor) return null
+  const [cropDialogOpen, setCropDialogOpen] = useState(false)
 
   const addImage = () => {
-    const url = prompt('Nhập URL ảnh (hoặc để trống để upload):')
+    // Use URL input as fallback option
+    const url = prompt('Nhập URL ảnh (hoặc Cancel để upload & cắt ảnh):')
     if (url) {
-      editor.chain().focus().setImage({ src: url }).run()
+      editor?.chain().focus().setImage({ src: url }).run()
+      return
     }
+    // User cancelled prompt → open crop dialog for file upload
+    setCropDialogOpen(true)
   }
+
+  const handleCropImageReady = useCallback((imageDataUrl: string) => {
+    editor?.chain().focus().setImage({ src: imageDataUrl }).run()
+  }, [editor])
+
+  const openCropDialog = useCallback(() => {
+    setCropDialogOpen(true)
+  }, [])
+
+  if (!editor) return null
 
   const setLink = () => {
     const prev = editor.getAttributes('link').href
@@ -275,7 +290,7 @@ export default function TipTapEditor({ content, onChange, placeholder }: TipTapE
         <div className="w-px h-5 bg-forest/10 mx-1" />
 
         {/* Image & Link */}
-        <ToolbarButton onClick={addImage} title="Chèn ảnh">
+        <ToolbarButton onClick={openCropDialog} title="Upload & Cắt ảnh">
           <ImagePlus className="w-4 h-4" />
         </ToolbarButton>
         <ToolbarButton
@@ -294,8 +309,15 @@ export default function TipTapEditor({ content, onChange, placeholder }: TipTapE
 
       {/* Tip */}
       <div className="px-4 py-2 bg-forest/5 text-xs text-forest/50 border-t border-forest/10">
-        💡 Mẹo: Copy bài viết từ Word, Google Docs hoặc website → Paste (Ctrl+V) giữ nguyên định dạng và ảnh
+        💡 Mẹo: Nhấn icon ảnh để upload & cắt ảnh | Paste (Ctrl+V) giữ nguyên định dạng từ Word/website
       </div>
+
+      {/* Image Crop Dialog */}
+      <ImageCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        onImageReady={handleCropImageReady}
+      />
     </div>
   )
 }
