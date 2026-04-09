@@ -118,7 +118,9 @@ async function readFromSupabase(): Promise<AnalyticsData | null> {
         .limit(10000),
     ])
 
+    // If any table query fails, reset cache so next time it re-checks
     if (pvRes.error || prodRes.error || sqRes.error) {
+      _supabaseReady = null
       return null
     }
 
@@ -233,11 +235,48 @@ export function writeAnalytics(data: AnalyticsData): void {
   }
 }
 
-// === Unified Read (Supabase first, file fallback) ===
+// === Unified Read (merge Supabase + file data) ===
 export async function readAnalyticsData(): Promise<AnalyticsData> {
   const supabaseData = await readFromSupabase()
-  if (supabaseData) return supabaseData
-  return readAnalytics()
+  const fileData = readAnalytics()
+
+  // If Supabase is not connected, return file data only
+  if (!supabaseData) return fileData
+
+  // Merge: combine Supabase data with file data, deduplicate by id
+  const allPageViewIds = new Set<string>([
+    ...supabaseData.pageViews.map((p) => p.id),
+    ...fileData.pageViews.map((p) => p.id),
+  ])
+  const allProductViewIds = new Set<string>([
+    ...supabaseData.productViews.map((p) => p.id),
+    ...fileData.productViews.map((p) => p.id),
+  ])
+  const allSearchQueryIds = new Set<string>([
+    ...supabaseData.searchQueries.map((s) => s.id),
+    ...fileData.searchQueries.map((s) => s.id),
+  ])
+
+  const mergedPageViews = [...supabaseData.pageViews]
+  for (const fv of fileData.pageViews) {
+    if (!allPageViewIds.has(fv.id)) mergedPageViews.push(fv)
+  }
+
+  const mergedProductViews = [...supabaseData.productViews]
+  for (const fv of fileData.productViews) {
+    if (!allProductViewIds.has(fv.id)) mergedProductViews.push(fv)
+  }
+
+  const mergedSearchQueries = [...supabaseData.searchQueries]
+  for (const fs of fileData.searchQueries) {
+    if (!allSearchQueryIds.has(fs.id)) mergedSearchQueries.push(fs)
+  }
+
+  return {
+    pageViews: mergedPageViews,
+    productViews: mergedProductViews,
+    searchQueries: mergedSearchQueries,
+  }
 }
 
 // === Unified Write ===
