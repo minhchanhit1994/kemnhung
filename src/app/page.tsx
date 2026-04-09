@@ -181,7 +181,7 @@ export default function Home() {
                     id="login-username"
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value)}
-                    placeholder="admin"
+                    placeholder=""
                     disabled={loginLoading}
                     autoComplete="username"
                     autoFocus
