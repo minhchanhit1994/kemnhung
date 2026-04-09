@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, ShoppingBag, Gem, Video, X, Phone, MessageCircle } from 'lucide-react'
+import { Search, ShoppingBag, Gem, Video, X, Phone, MessageCircle, Maximize2 } from 'lucide-react'
 import type { Product, ShopInfo } from '@/lib/types'
 
 interface ShopHomepageProps {
@@ -32,6 +32,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([fetchShopInfo(), fetchProducts()])
@@ -233,7 +234,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 <span className="text-amber-400">{shopNameParts}</span>
               )}
             </h3>
-            <p className="text-sm mb-4">Trang sức handmade tinh xảo – Được chế tác riêng cho bạn</p>
+            <p className="text-sm mb-4">Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.</p>
             {displayPhone && (
               <div className="flex items-center justify-center gap-4 text-sm mb-2">
                 <a
@@ -295,11 +296,20 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                   poster={selectedProduct.imageUrl || undefined}
                 />
               ) : selectedProduct.imageUrl ? (
-                <img
-                  src={selectedProduct.imageUrl}
-                  alt={selectedProduct.name}
-                  className="w-full h-full object-cover"
-                />
+                <div className="relative group">
+                  <img
+                    src={selectedProduct.imageUrl}
+                    alt={selectedProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    onClick={() => setZoomedImage(selectedProduct.imageUrl)}
+                    className="absolute bottom-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-all opacity-0 group-hover:opacity-100"
+                    title="Phóng to ảnh"
+                  >
+                    <Maximize2 className="w-5 h-5 text-gray-700" />
+                  </button>
+                </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
                   <Gem className="w-20 h-20 text-gray-300" />
@@ -351,6 +361,26 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               )}
             </div>
           </div>
+        </div>
+      )}
+      {/* === Image Zoom Fullscreen === */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setZoomedImage(null)}
+        >
+          <button
+            onClick={() => setZoomedImage(null)}
+            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <img
+            src={zoomedImage}
+            alt="Ảnh phóng to"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
