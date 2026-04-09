@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
@@ -50,6 +51,10 @@ function ToolbarButton({
 }
 
 export default function TipTapEditor({ content, onChange, placeholder }: TipTapEditorProps) {
+  // Force re-render on selection/transaction changes so toolbar stays in sync
+  const [, setTick] = useState(0)
+  const bump = useCallback(() => setTick(t => t + 1), [])
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -78,6 +83,13 @@ export default function TipTapEditor({ content, onChange, placeholder }: TipTapE
     content: content || '',
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
+      bump()
+    },
+    onSelectionUpdate: () => {
+      bump()
+    },
+    onTransaction: () => {
+      bump()
     },
     editorProps: {
       attributes: {
