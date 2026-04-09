@@ -101,7 +101,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             <img
               src="/logo.png"
               alt="Mộc Đậu Decor Logo"
-              className="h-28 md:h-36 w-auto drop-shadow-lg"
+              className="h-32 md:h-44 w-auto drop-shadow-xl rounded-lg"
             />
           </div>
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-5">
