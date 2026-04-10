@@ -154,6 +154,53 @@ export default function TipTapEditor({ content, onChange, placeholder }: TipTapE
 
   if (!editor) return null
 
+  // Apply heading only to the block where cursor starts (not entire selection)
+  const applyHeading = (level: 1 | 2 | 3) => {
+    const { $from } = editor.state.selection
+    // Resolve to depth 1 = direct child of doc (paragraph/heading nodes)
+ const resolvedPos = $from
+    let targetDepth = resolvedPos.depth
+    // Walk up to find the block node (paragraph, heading, etc.)
+    for (let d = resolvedPos.depth; d > 0; d--) {
+      const node = resolvedPos.node(d)
+      if (node.isBlock && node.type.name !== 'doc') {
+        targetDepth = d
+        break
+      }
+    }
+    // Find the block's start and end positions
+    const blockStart = resolvedPos.start(targetDepth) - 1
+    const blockEnd = resolvedPos.end(targetDepth)
+    const currentLevel = editor.isActive('heading') ? editor.getAttributes('heading').level : 0
+    if (currentLevel === level) {
+      // Already this heading level → convert back to paragraph
+      editor.chain().focus()
+        .command(({ tr, state }) => {
+          const node = state.doc.nodeAt(blockStart)
+          if (node && node.type.name === 'heading' && node.attrs.level === level) {
+            const paragraph = state.schema.nodes.paragraph.create(null, node.content, node.marks)
+            tr.replaceWith(blockStart, blockEnd, paragraph)
+            return true
+          }
+          return false
+        })
+        .run()
+    } else {
+      // Set heading on this block only
+      editor.chain().focus()
+        .command(({ tr, state }) => {
+          const node = state.doc.nodeAt(blockStart)
+          if (node) {
+            const heading = state.schema.nodes.heading.create({ level }, node.content, node.marks)
+            tr.replaceWith(blockStart, blockEnd, heading)
+            return true
+          }
+          return false
+        })
+        .run()
+    }
+  }
+
   const setLink = () => {
     const prev = editor.getAttributes('link').href
     const url = prompt('Nhập URL liên kết:', prev || 'https://')
@@ -181,21 +228,21 @@ export default function TipTapEditor({ content, onChange, placeholder }: TipTapE
 
         {/* Headings */}
         <ToolbarButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          onClick={() => applyHeading(1)}
           isActive={editor.isActive('heading', { level: 1 })}
           title="Tiêu đề 1"
         >
           <Heading1 className="w-4 h-4" />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          onClick={() => applyHeading(2)}
           isActive={editor.isActive('heading', { level: 2 })}
           title="Tiêu đề 2"
         >
           <Heading2 className="w-4 h-4" />
         </ToolbarButton>
         <ToolbarButton
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          onClick={() => applyHeading(3)}
           isActive={editor.isActive('heading', { level: 3 })}
           title="Tiêu đề 3"
         >
