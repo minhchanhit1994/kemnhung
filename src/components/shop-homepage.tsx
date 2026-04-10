@@ -155,28 +155,47 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   const zaloClean = zaloNumber ? zaloNumber.replace(/^0/, '') : ''
   // Web link for desktop
   const zaloWebLink = zaloClean ? `https://zalo.me/${zaloClean}` : null
-  // Deep link for mobile - bypasses Zalo server redirect that causes double slash issue
-  const zaloDeepLink = zaloClean ? `zalo://qr/link/${zaloClean}` : null
+  // Android intent link - bypasses Zalo server redirect entirely
+  const zaloIntentLink = zaloClean
+    ? `intent://zalo.me/${zaloClean}#Intent;scheme=https;package=com.zing.zalo;end;`
+    : null
   const displayPhone = shopInfo.phone || shopInfo.zalo || ''
+  const telLink = displayPhone ? `tel:${displayPhone}` : null
 
-  // On mobile: use zalo:// deep link directly to avoid http://zalo//qr/link/ redirect issue
-  // On desktop: use https://zalo.me/ which opens Zalo web
+  // Mobile Zalo click handler
+  // Problem: https://zalo.me/ on mobile gets redirected to broken URL http://zalo//qr/link/...
+  // Solution:
+  //   - Android: use intent:// URL → opens Zalo app directly, bypasses server redirect
+  //   - iOS: use window.location.href (not <a href> click) → iOS handles zalo:// scheme natively
+  //   - Desktop: use https://zalo.me/ normally → opens Zalo web
   const handleZaloClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!zaloDeepLink || !zaloWebLink) return
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-    if (isMobile) {
-      e.preventDefault()
-      window.location.href = zaloDeepLink
-      // Fallback to web if app not installed
+    if (!zaloWebLink) return
+    const ua = navigator.userAgent || ''
+    const isAndroid = /Android/i.test(ua)
+    const isIOS = /iPhone|iPad|iPod/i.test(ua)
+
+    if (!isAndroid && !isIOS) return // Desktop: let <a href> work normally
+
+    e.preventDefault()
+
+    if (isAndroid && zaloIntentLink) {
+      // Android: use intent:// to open Zalo app directly
+      // This completely bypasses the server redirect issue
+      window.location.href = zaloIntentLink
+      // Fallback: if Zalo not installed, open web version after 2.5s
       const timer = setTimeout(() => {
         if (!document.hidden) {
           window.location.href = zaloWebLink
         }
       }, 2500)
-      // Clean up timer if app opened successfully
       window.addEventListener('blur', () => clearTimeout(timer), { once: true })
+    } else if (isIOS) {
+      // iOS: use window.location.href instead of <a> click
+      // iOS will recognize zalo.me URL and offer to open in Zalo app
+      // If Zalo not installed, it falls back to the web page
+      window.location.href = zaloWebLink
     }
-  }, [zaloDeepLink, zaloWebLink])
+  }, [zaloWebLink, zaloIntentLink])
 
   const shopNameParts = shopInfo.shopName || 'Mộc Đậu Decor'
   const nameWords = shopNameParts.trim().split(/\s+/)
@@ -383,14 +402,26 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             <p className="text-sm mb-4 text-forest/70">Mộc Đậu Decor – Đậu lại chút xinh cho góc nhỏ của bạn.</p>
             {displayPhone && (
               <div className="flex items-center justify-center gap-4 text-sm mb-2">
-                <a
-                  href={zaloWebLink || '#'}
-                  onClick={handleZaloClick}
-                  className="flex items-center gap-1.5 hover:text-tan transition-colors"
-                >
-                  <Phone className="w-4 h-4" />
-                  {displayPhone}
-                </a>
+                {telLink && (
+                  <a
+                    href={telLink}
+                    className="flex items-center gap-1.5 hover:text-tan transition-colors"
+                  >
+                    <Phone className="w-4 h-4" />
+                    {displayPhone}
+                  </a>
+                )}
+                {zaloWebLink && (
+                  <a
+                    href={zaloWebLink}
+                    onClick={handleZaloClick}
+                    className="flex items-center gap-1.5 hover:text-tan transition-colors"
+                    title="Chat Zalo"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Zalo
+                  </a>
+                )}
               </div>
             )}
             <p className="text-xs text-forest/50 mt-6">
