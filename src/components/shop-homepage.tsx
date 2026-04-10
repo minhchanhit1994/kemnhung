@@ -155,13 +155,45 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   const zaloClean = zaloNumber ? zaloNumber.replace(/^0/, '') : ''
   // Phone with country code (84 for Vietnam)
   const zaloWithCC = zaloClean ? `84${zaloClean}` : ''
-  // Use chat.zalo.me/?phone= — this is the ONLY reliable link that works for:
-  //   - Personal Zalo accounts (zalo.me/{sđt} is blocked for most accounts)
-  //   - Both mobile and desktop browsers
-  //   - Opens Zalo web chat directly, or prompts to open Zalo app if installed
+  // Zalo web chat link — works on desktop, but on mobile Zalo app intercepts it
+  // and doesn't navigate to the specific account (personal account limitation)
   const zaloChatLink = zaloWithCC ? `https://chat.zalo.me/?phone=${zaloWithCC}` : null
   const displayPhone = shopInfo.phone || shopInfo.zalo || ''
   const telLink = displayPhone ? `tel:${displayPhone}` : null
+
+  // Smart Zalo contact popup for mobile (personal account can't deep-link)
+  const [showZaloPopup, setShowZaloPopup] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleZaloClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!zaloChatLink) return
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      // Mobile: show popup with options (personal Zalo can't deep-link)
+      e.preventDefault()
+      setShowZaloPopup(true)
+    }
+    // Desktop: let <a href> navigate to chat.zalo.me normally
+  }, [zaloChatLink])
+
+  const copyPhone = useCallback(() => {
+    if (displayPhone) {
+      navigator.clipboard.writeText(displayPhone).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }).catch(() => {
+        // Fallback for older browsers
+        const input = document.createElement('input')
+        input.value = displayPhone
+        document.body.appendChild(input)
+        input.select()
+        document.execCommand('copy')
+        document.body.removeChild(input)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      })
+    }
+  }, [displayPhone])
 
   const shopNameParts = shopInfo.shopName || 'Mộc Đậu Decor'
   const nameWords = shopNameParts.trim().split(/\s+/)
@@ -244,7 +276,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               Xem sản phẩm
             </a>
             {zaloChatLink ? (
-              <a href={zaloChatLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
+              <a href={zaloChatLink} onClick={handleZaloClick} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </a>
@@ -380,6 +412,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 {zaloChatLink && (
                   <a
                     href={zaloChatLink}
+                    onClick={handleZaloClick}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 hover:text-tan transition-colors"
@@ -489,6 +522,7 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               {zaloChatLink ? (
                 <a
                   href={zaloChatLink}
+                  onClick={handleZaloClick}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full bg-forest hover:bg-forest-dark text-white font-semibold py-3 rounded-xl transition-colors"
@@ -525,6 +559,98 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
             className="max-w-full max-h-full object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* === Zalo Contact Popup (Mobile) === */}
+      {showZaloPopup && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center"
+          onClick={() => setShowZaloPopup(false)}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm mx-0 sm:mx-4 shadow-2xl animate-slide-up sm:animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 pb-2 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-forest-dark">Liên hệ {shopNameParts}</h3>
+              <button
+                onClick={() => setShowZaloPopup(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Options */}
+            <div className="p-4 space-y-3">
+              {/* Option 1: Call phone */}
+              {telLink && (
+                <a
+                  href={telLink}
+                  className="flex items-center gap-4 p-3 rounded-xl bg-forest/5 hover:bg-forest/10 transition-colors active:scale-[0.98]"
+                >
+                  <div className="w-12 h-12 rounded-full bg-forest flex items-center justify-center flex-shrink-0">
+                    <Phone className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-forest-dark">Gọi điện thoại</p>
+                    <p className="text-sm text-forest/60">{displayPhone}</p>
+                  </div>
+                  <svg className="w-5 h-5 text-forest/30 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </a>
+              )}
+
+              {/* Option 2: Copy phone number to clipboard */}
+              <button
+                onClick={copyPhone}
+                className="flex items-center gap-4 p-3 rounded-xl bg-forest/5 hover:bg-forest/10 transition-colors active:scale-[0.98] w-full text-left"
+              >
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${copied ? 'bg-green-500' : 'bg-tan'}`}>
+                  {copied ? (
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-forest-dark">{copied ? 'Đã sao chép!' : 'Sao chép số Zalo'}</p>
+                  <p className="text-sm text-forest/60">{copied ? 'Mở Zalo và tìm số' : displayPhone}</p>
+                </div>
+              </button>
+
+              {/* Option 3: Open Zalo web chat */}
+              {zaloChatLink && (
+                <a
+                  href={zaloChatLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-4 p-3 rounded-xl bg-forest/5 hover:bg-forest/10 transition-colors active:scale-[0.98]"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#0068ff] flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-forest-dark">Mở Zalo Web</p>
+                    <p className="text-sm text-forest/60">Chat qua trình duyệt</p>
+                  </div>
+                  <svg className="w-5 h-5 text-forest/30 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </a>
+              )}
+
+              {/* Instructions */}
+              <div className="mt-3 p-3 bg-mint-light rounded-xl">
+                <p className="text-xs font-semibold text-forest/70 mb-1.5">Cách nhanh nhất để chat Zalo:</p>
+                <ol className="text-xs text-forest/60 space-y-1 list-decimal list-inside">
+                  <li>Nhấn <b>"Sao chép số Zalo"</b> ở trên</li>
+                  <li>Mở ứng dụng <b>Zalo</b></li>
+                  <li>Nhấn <b>Tìm kiếm</b> → Dán số <b>{displayPhone}</b></li>
+                  <li>Gửi tin nhắn cho <b>{shopNameParts}</b></li>
+                </ol>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
