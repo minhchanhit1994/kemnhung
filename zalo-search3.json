@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://stackoverflow.com/questions/79425725/open-universal-link-from-social-network-in-app-browser",
+    "name": "Open universal link from social network in-app browser",
+    "snippet": "All you need to do is setup a Deeplink for your app that will open the respective pages in your app. First you will need to setup the URL ... universal link goes to safari instead of the app that called it iOS - Universal links - Preventing a redirect in browser from opening ... More results from stackoverflow.com",
+    "host_name": "stackoverflow.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@sohail_saifi/implementing-deep-linking-in-mobile-apps-42f99c190ed3",
+    "name": "Implementing Deep Linking in Mobile Apps | by Sohail Saifi | Medium",
+    "snippet": "Universal Links (iOS): Uses HTTPS URLs that work in browsers AND apps. Example: https://myapp.com/profile/123 opens your app if installed, ...",
+    "host_name": "medium.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/ionic-team/capacitor/discussions/4368",
+    "name": "iOS Deep Links With Chrome As Default Browser #4368 - GitHub",
+    "snippet": "With universal links, users open your app when they click links to your website within Safari and WKWebView, and when they click links that result in a call to:. Missing: mobile loop intent",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.branch.io/resources/blog/universal-links-uri-schemes-app-links-and-deep-links-whats-the-difference",
+    "name": "Universal Links vs. Deep Links: Key Differences - Branch.io",
+    "snippet": "Get insights into Universal Links, URI Schemes, App Links, and Deep Links, and their unique roles in improving app functionality and user interaction. Missing: safari loop",
+    "host_name": "www.branch.io",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://idura.eu/blog/universal-links-and-app-links",
+    "name": "What Are Universal Links and App Links, and How to Implement Them",
+    "snippet": "Learn how to implement Universal Links and App Links for seamless web-to-app navigation and improved user experience. Missing: chrome loop",
+    "host_name": "idura.eu",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.kochava.com/articles/links-overview/adding-universal-link-or-app-link-support/30731-understanding-universal-links",
+    "name": "Understanding Universal Links: Deep Linking for iOS",
+    "snippet": "Deep Links use the URI Scheme. · Universal Links do not have redirects. · Universal Links are a series of web pages to in-app locations.",
+    "host_name": "support.kochava.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.google.com/google-ads/answer/16434983?hl=en",
+    "name": "Fix common setup errors with deep linking implementation",
+    "snippet": "This article will help you understand and troubleshoot common errors when you implement App links or Universal links. Missing: safari loop",
+    "host_name": "support.google.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.appsflyer.com/glossary/universal-links",
+    "name": "What are Universal Links and how to implement them - AppsFlyer",
+    "snippet": "Universal Links are Apple's iOS version of deep links, which are unique URLs that direct a user to a specific webpage or a piece of content within an app.",
+    "host_name": "www.appsflyer.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/flutterhelp/comments/1owrg9f/ios_universal_link_opens_app_and_then_opens",
+    "name": "iOS Universal Link opens app and then opens browser (Flutter +",
+    "snippet": "Has anyone encountered this issue where Universal Links with paths/params open the app and then open Safari? What could cause iOS to trigger the ... Missing: mobile redirect loop intent",
+    "host_name": "www.reddit.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developer.apple.com/documentation/xcode/allowing-apps-and-websites-to-link-to-your-content",
+    "name": "Allowing apps and websites to link to your content - Apple Developer",
+    "snippet": "When users tap or click a universal link, the system redirects the link directly to your app without routing through the person's default web browser or your ... Missing: loop | Show results with: loop",
+    "host_name": "developer.apple.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
