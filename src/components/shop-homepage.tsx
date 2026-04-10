@@ -153,49 +153,29 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
 
   const zaloNumber = shopInfo.zalo || shopInfo.phone
   const zaloClean = zaloNumber ? zaloNumber.replace(/^0/, '') : ''
-  // Web link for desktop
+  // Web link for desktop (opens Zalo web)
   const zaloWebLink = zaloClean ? `https://zalo.me/${zaloClean}` : null
-  // Android intent link - bypasses Zalo server redirect entirely
-  const zaloIntentLink = zaloClean
-    ? `intent://zalo.me/${zaloClean}#Intent;scheme=https;package=com.zing.zalo;end;`
-    : null
+  // Redirect page for mobile - tries multiple methods to open Zalo app
+  const zaloRedirectLink = zaloClean ? `/api/zalo?phone=${zaloClean}&shop=${encodeURIComponent(shopInfo.shopName || 'Mộc Đậu Decor')}` : null
   const displayPhone = shopInfo.phone || shopInfo.zalo || ''
   const telLink = displayPhone ? `tel:${displayPhone}` : null
 
-  // Mobile Zalo click handler
-  // Problem: https://zalo.me/ on mobile gets redirected to broken URL http://zalo//qr/link/...
-  // Solution:
-  //   - Android: use intent:// URL → opens Zalo app directly, bypasses server redirect
-  //   - iOS: use window.location.href (not <a href> click) → iOS handles zalo:// scheme natively
-  //   - Desktop: use https://zalo.me/ normally → opens Zalo web
+  // Zalo click handler
+  // Desktop: open https://zalo.me/ directly (Zalo web works fine)
+  // Mobile: navigate to /api/zalo redirect page which tries multiple methods:
+  //   1. Android intent (opens Zalo app directly)
+  //   2. Direct window.location to zalo.me
+  //   3. Fallback UI with phone call + manual Zalo instructions
   const handleZaloClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!zaloWebLink) return
-    const ua = navigator.userAgent || ''
-    const isAndroid = /Android/i.test(ua)
-    const isIOS = /iPhone|iPad|iPod/i.test(ua)
-
-    if (!isAndroid && !isIOS) return // Desktop: let <a href> work normally
+    if (!zaloRedirectLink) return
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (!isMobile) return // Desktop: let <a href="https://zalo.me/..."> work normally
 
     e.preventDefault()
-
-    if (isAndroid && zaloIntentLink) {
-      // Android: use intent:// to open Zalo app directly
-      // This completely bypasses the server redirect issue
-      window.location.href = zaloIntentLink
-      // Fallback: if Zalo not installed, open web version after 2.5s
-      const timer = setTimeout(() => {
-        if (!document.hidden) {
-          window.location.href = zaloWebLink
-        }
-      }, 2500)
-      window.addEventListener('blur', () => clearTimeout(timer), { once: true })
-    } else if (isIOS) {
-      // iOS: use window.location.href instead of <a> click
-      // iOS will recognize zalo.me URL and offer to open in Zalo app
-      // If Zalo not installed, it falls back to the web page
-      window.location.href = zaloWebLink
-    }
-  }, [zaloWebLink, zaloIntentLink])
+    // Navigate to redirect page — this isolates the Zalo opening logic
+    // from the main website, preventing flash/loop issues
+    window.location.href = zaloRedirectLink
+  }, [zaloRedirectLink])
 
   const shopNameParts = shopInfo.shopName || 'Mộc Đậu Decor'
   const nameWords = shopNameParts.trim().split(/\s+/)
