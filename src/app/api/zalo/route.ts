@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // /api/zalo?phone=372407322
-// Returns a minimal HTML page that opens Zalo app via URI scheme on mobile
-// Fallback to web + phone call if Zalo is not installed
+// Fallback page for mobile when Zalo deep link fails
+// Uses zalo:// URI scheme with country code, then shows manual instructions
 export async function GET(request: NextRequest) {
   const phone = request.nextUrl.searchParams.get('phone') || ''
   const shopName = request.nextUrl.searchParams.get('shop') || 'Mộc Đậu Decor'
@@ -11,8 +11,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect('/')
   }
 
+  // Clean phone: remove leading 0, add Vietnam country code 84
+  const phoneNoLeadingZero = phone.replace(/^0/, '')
+  const phoneWithCC = `84${phoneNoLeadingZero}`
   const displayPhone = phone.startsWith('0') ? phone : `0${phone}`
-  const zaloWebUrl = `https://zalo.me/${phone.replace(/^0/, '')}`
+  const zaloWebUrl = `https://zalo.me/${phoneNoLeadingZero}`
   const telUrl = `tel:${displayPhone}`
 
   // Return a self-contained HTML page that opens Zalo via URI scheme
@@ -66,7 +69,7 @@ p{font-size:14px;color:#4a7d65;margin-bottom:16px;line-height:1.5}
 </div>
 <script>
 (function() {
-  var phone = "${phone}";
+  var phoneWithCC = "${phoneWithCC}";
   var displayPhone = "${displayPhone}";
   var zaloWebUrl = "${zaloWebUrl}";
   var telUrl = "${telUrl}";
@@ -74,19 +77,13 @@ p{font-size:14px;color:#4a7d65;margin-bottom:16px;line-height:1.5}
   var appOpened = false;
 
   // === Detect when Zalo app opens (page goes to background) ===
-  // visibilitychange is the most reliable way to detect app switch
   document.addEventListener("visibilitychange", function() {
-    if (document.hidden) {
-      appOpened = true;
-    }
+    if (document.hidden) appOpened = true;
   });
 
-  // blur fires too eagerly, so we add a small delay before trusting it
   var blurTimer = null;
   window.addEventListener("blur", function() {
-    blurTimer = setTimeout(function() {
-      appOpened = true;
-    }, 500);
+    blurTimer = setTimeout(function() { appOpened = true; }, 500);
   });
   window.addEventListener("focus", function() {
     if (blurTimer) clearTimeout(blurTimer);
@@ -124,29 +121,30 @@ p{font-size:14px;color:#4a7d65;margin-bottom:16px;line-height:1.5}
     );
   }
 
-  // === Open Zalo via URI scheme ===
-  // This is the correct deep link format registered by the Zalo app
-  // When Zalo is installed, the OS handles this scheme and opens the app directly
-  // Reference: https://bibica.net/huong-dan-cach-sua-loi-link-zalo-me-sdt-tren-website-v2
-  var zaloUri = "zalo://conversation?phone=" + phone;
+  // === Strategy 1: Try zalo:// URI scheme with country code ===
+  var zaloUri = "zalo://conversation?phone=" + phoneWithCC;
 
-  // Set location to trigger the URI scheme
-  window.location.href = zaloUri;
+  // On iOS, use direct location (Safari allows custom scheme with user gesture context)
+  // On Android, try it but Chrome may block — we handle that with fallback
+  var ua = navigator.userAgent || '';
+  var isAndroid = /Android/i.test(ua);
 
-  // If the app didn't open within 2.5 seconds, Zalo is likely not installed
-  // or the scheme didn't work - show fallback options
+  if (isAndroid) {
+    // === Strategy for Android: use intent:// URL ===
+    // Chrome allows intent:// programmatically because it has built-in fallback
+    var fallbackUrl = encodeURIComponent(zaloWebUrl);
+    var intentUrl = "intent://conversation?phone=" + phoneWithCC +
+      "#Intent;scheme=zalo;package=com.zing.zalo;S.browser_fallback_url=" + fallbackUrl + ";end";
+    window.location.href = intentUrl;
+  } else {
+    // === Strategy for iOS and others: direct zalo:// URI scheme ===
+    window.location.href = zaloUri;
+  }
+
+  // Fallback: if app didn't open within 3 seconds, show manual options
   setTimeout(function() {
-    if (!appOpened) {
-      showFallback();
-    }
-  }, 2500);
-
-  // Secondary timeout: also check after 4 seconds for slower devices
-  setTimeout(function() {
-    if (!appOpened) {
-      showFallback();
-    }
-  }, 4000);
+    if (!appOpened) showFallback();
+  }, 3000);
 })();
 </script>
 </body>

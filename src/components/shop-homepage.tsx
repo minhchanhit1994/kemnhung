@@ -153,29 +153,49 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
 
   const zaloNumber = shopInfo.zalo || shopInfo.phone
   const zaloClean = zaloNumber ? zaloNumber.replace(/^0/, '') : ''
+  // Phone with country code (84 for Vietnam) for Zalo deep link
+  const zaloWithCC = zaloClean ? `84${zaloClean}` : ''
   // Web link for desktop (opens Zalo web)
   const zaloWebLink = zaloClean ? `https://zalo.me/${zaloClean}` : null
-  // Redirect page for mobile - tries multiple methods to open Zalo app
-  const zaloRedirectLink = zaloClean ? `/api/zalo?phone=${zaloClean}&shop=${encodeURIComponent(shopInfo.shopName || 'Mộc Đậu Decor')}` : null
+  // Fallback page for mobile
+  const zaloFallbackLink = zaloClean ? `/api/zalo?phone=${zaloClean}&shop=${encodeURIComponent(shopInfo.shopName || 'Mộc Đậu Decor')}` : null
   const displayPhone = shopInfo.phone || shopInfo.zalo || ''
   const telLink = displayPhone ? `tel:${displayPhone}` : null
 
   // Zalo click handler
   // Desktop: open https://zalo.me/ directly (Zalo web works fine)
-  // Mobile: navigate to /api/zalo redirect page which tries multiple methods:
-  //   1. Android intent (opens Zalo app directly)
-  //   2. Direct window.location to zalo.me
-  //   3. Fallback UI with phone call + manual Zalo instructions
+  // iOS: use zalo:// URI scheme with country code (84 prefix)
+  // Android: use intent:// URL which Chrome allows programmatically
+  //   intent:// has built-in fallback URL when app can't handle it
   const handleZaloClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!zaloRedirectLink) return
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (!zaloClean || !zaloWebLink) return
+    const ua = navigator.userAgent || ''
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua)
     if (!isMobile) return // Desktop: let <a href="https://zalo.me/..."> work normally
 
     e.preventDefault()
-    // Navigate to redirect page — this isolates the Zalo opening logic
-    // from the main website, preventing flash/loop issues
-    window.location.href = zaloRedirectLink
-  }, [zaloRedirectLink])
+
+    const isIOS = /iPhone|iPad|iPod/i.test(ua)
+    const isAndroid = /Android/i.test(ua)
+
+    if (isIOS) {
+      // iOS Safari handles zalo:// custom URI scheme natively
+      // Use country code (84) prefix for Vietnam phone numbers
+      window.location.href = `zalo://conversation?phone=${zaloWithCC}`
+    } else if (isAndroid) {
+      // Android Chrome BLOCKS custom URI schemes (zalo://) programmatically
+      // But Chrome ALLOWS intent:// URLs (they have built-in fallback handling)
+      // Format: intent://<path>#Intent;scheme=<scheme>;package=<pkg>;S.browser_fallback_url=<url>;end
+      // This tells Chrome: try zalo://conversation?phone=84xxx via Zalo app,
+      // if app can't handle it, fall back to the URL below
+      const fallback = encodeURIComponent(zaloFallbackLink || zaloWebLink)
+      const intentUrl = `intent://conversation?phone=${zaloWithCC}#Intent;scheme=zalo;package=com.zing.zalo;S.browser_fallback_url=${fallback};end`
+      window.location.href = intentUrl
+    } else {
+      // Other mobile browsers: try direct scheme, fallback to redirect page
+      window.location.href = `zalo://conversation?phone=${zaloWithCC}`
+    }
+  }, [zaloClean, zaloWebLink, zaloWithCC, zaloFallbackLink])
 
   const shopNameParts = shopInfo.shopName || 'Mộc Đậu Decor'
   const nameWords = shopNameParts.trim().split(/\s+/)
