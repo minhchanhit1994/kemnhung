@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // /api/zalo?phone=372407322
-// Returns a minimal HTML page that tries multiple methods to open Zalo chat on mobile
+// Returns a minimal HTML page that opens Zalo app via URI scheme on mobile
+// Fallback to web + phone call if Zalo is not installed
 export async function GET(request: NextRequest) {
   const phone = request.nextUrl.searchParams.get('phone') || ''
   const shopName = request.nextUrl.searchParams.get('shop') || 'Mộc Đậu Decor'
@@ -14,19 +15,19 @@ export async function GET(request: NextRequest) {
   const zaloWebUrl = `https://zalo.me/${phone.replace(/^0/, '')}`
   const telUrl = `tel:${displayPhone}`
 
-  // Return a self-contained HTML page that tries to open Zalo
+  // Return a self-contained HTML page that opens Zalo via URI scheme
   const html = `<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Đang mở Zalo...</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   background:#f0faf4;color:#0f4232;min-height:100vh;display:flex;
   align-items:center;justify-content:center;text-align:center;padding:20px}
-.container{max-width:360px}
+.container{max-width:360px;width:100%}
 .spinner{width:40px;height:40px;border:3px solid #d0f0de;
   border-top-color:#1a6b4f;border-radius:50%;animation:spin 0.8s linear infinite;
   margin:0 auto 20px}
@@ -40,15 +41,18 @@ p{font-size:14px;color:#4a7d65;margin-bottom:16px;line-height:1.5}
 .btn-primary:hover{background:#0f4232}
 .btn-outline{background:white;color:#1a6b4f;border:1.5px solid #a7dfc1}
 .btn-outline:hover{background:#d0f0de}
-.fallback{margin-top:24px;padding:16px;background:white;border-radius:12px;
-  border:1px solid #a7dfc1;display:none}
-.fallback p{font-size:13px;margin-bottom:12px}
-.steps{text-align:left;font-size:13px;line-height:1.8;color:#4a7d65}
-.steps li{margin-bottom:4px}
+.fallback{margin-top:0;padding:20px;background:white;border-radius:16px;
+  border:1px solid #a7dfc1;display:none;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.fallback h2{font-size:16px;margin-bottom:4px;color:#c97856}
+.fallback .subtitle{font-size:13px;color:#6b8f7e;margin-bottom:16px}
+.steps{text-align:left;font-size:13px;line-height:2;color:#4a7d65;
+  background:#f0faf4;border-radius:10px;padding:12px 16px;margin-top:16px}
+.steps b{color:#1a6b4f}
 .fade-in{animation:fadeIn 0.3s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 #loading{transition:opacity 0.3s}
 #result{display:none}
+.btn-group{display:flex;flex-direction:column;gap:8px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -64,29 +68,37 @@ p{font-size:14px;color:#4a7d65;margin-bottom:16px;line-height:1.5}
 (function() {
   var phone = "${phone}";
   var displayPhone = "${displayPhone}";
-  var zaloUrl = "${zaloWebUrl}";
+  var zaloWebUrl = "${zaloWebUrl}";
   var telUrl = "${telUrl}";
   var shopName = "${shopName}";
   var appOpened = false;
-  var attempts = 0;
 
-  function onAppOpened() {
-    appOpened = true;
-  }
-
-  // Listen for app open (page goes to background)
-  document.addEventListener('visibilitychange', function() {
-    if (document.hidden) onAppOpened();
+  // === Detect when Zalo app opens (page goes to background) ===
+  // visibilitychange is the most reliable way to detect app switch
+  document.addEventListener("visibilitychange", function() {
+    if (document.hidden) {
+      appOpened = true;
+    }
   });
-  window.addEventListener('blur', function() { onAppOpened(); });
+
+  // blur fires too eagerly, so we add a small delay before trusting it
+  var blurTimer = null;
+  window.addEventListener("blur", function() {
+    blurTimer = setTimeout(function() {
+      appOpened = true;
+    }, 500);
+  });
+  window.addEventListener("focus", function() {
+    if (blurTimer) clearTimeout(blurTimer);
+  });
 
   function showResult(content) {
-    var loading = document.getElementById('loading');
-    var result = document.getElementById('result');
-    if (loading) loading.style.opacity = '0';
+    var loading = document.getElementById("loading");
+    var result = document.getElementById("result");
+    if (loading) loading.style.opacity = "0";
     setTimeout(function() {
-      if (loading) loading.style.display = 'none';
-      result.style.display = 'block';
+      if (loading) loading.style.display = "none";
+      result.style.display = "block";
       result.innerHTML = content;
     }, 300);
   }
@@ -95,63 +107,46 @@ p{font-size:14px;color:#4a7d65;margin-bottom:16px;line-height:1.5}
     if (appOpened) return;
     showResult(
       '<div class="fallback fade-in">' +
-      '<h2 style="font-size:16px;margin-bottom:8px;color:#c97856">Không thể tự động mở Zalo</h2>' +
-      '<p> Bạn có thể liên hệ theo cách thủ công:</p>' +
-      '<a href="' + telUrl + '" class="btn btn-primary" style="width:100%">📞 Gọi ' + displayPhone + '</a>' +
-      '<a href="' + zaloUrl + '" class="btn btn-outline" style="width:100%">💬 Mở Zalo Web</a>' +
-      '<ol class="steps" style="margin-top:16px;padding-left:20px">' +
-      '<li>Mở ứng dụng Zalo trên điện thoại</li>' +
-      '<li>Nhấn <b>Thêm bạn</b> → <b>Tìm theo số điện thoại</b></li>' +
-      '<li>Nhập số <b>' + displayPhone + '</b></li>' +
-      '<li>Gửi tin nhắn cho ' + shopName + '</li>' +
-      '</ol>' +
+      '<h2>Không thể tự động mở Zalo</h2>' +
+      '<p class="subtitle">Bạn có thể liên hệ theo các cách sau:</p>' +
+      '<div class="btn-group">' +
+      '<a href="' + telUrl + '" class="btn btn-primary" style="width:100%">\\uD83D\\uDCDE Gọi ' + displayPhone + '</a>' +
+      '<a href="' + zaloWebUrl + '" class="btn btn-outline" style="width:100%">\\uD83D\\uDCAC Mở Zalo Web</a>' +
+      '</div>' +
+      '<div class="steps">' +
+      '<b>Hướng dẫn chat Zalo:</b><br>' +
+      '1. Mở ứng dụng <b>Zalo</b> trên điện thoại<br>' +
+      '2. Nhấn <b>Tìm kiếm</b> (biểu tượng kính lúp)<br>' +
+      '3. Nhập số <b>' + displayPhone + '</b><br>' +
+      '4. Chọn kết quả và gửi tin nhắn cho <b>' + shopName + '</b>' +
+      '</div>' +
       '</div>'
     );
   }
 
-  // === Strategy 1: Direct window.location (works on many devices) ===
-  function tryDirect() {
-    attempts++;
-    window.location.href = zaloUrl;
-    setTimeout(function() {
-      if (!appOpened && attempts < 3) {
-        showFallback();
-      }
-    }, 3000);
-  }
+  // === Open Zalo via URI scheme ===
+  // This is the correct deep link format registered by the Zalo app
+  // When Zalo is installed, the OS handles this scheme and opens the app directly
+  // Reference: https://bibica.net/huong-dan-cach-sua-loi-link-zalo-me-sdt-tren-website-v2
+  var zaloUri = "zalo://conversation?phone=" + phone;
 
-  // === Strategy 2: Android Intent ===
-  function tryIntent() {
-    attempts++;
-    var intentUrl = 'intent://zalo.me/' + phone + '#Intent;scheme=https;package=com.zing.zalo;end;';
-    
-    // Try opening via a hidden iframe to avoid navigation issues
-    var iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = intentUrl;
-    document.body.appendChild(iframe);
-    
-    setTimeout(function() {
-      document.body.removeChild(iframe);
-      if (!appOpened) {
-        // Fallback to direct
-        tryDirect();
-      }
-    }, 1500);
-  }
+  // Set location to trigger the URI scheme
+  window.location.href = zaloUri;
 
-  // Detect platform
-  var ua = navigator.userAgent || '';
-  var isAndroid = /Android/i.test(ua);
-  var isIOS = /iPhone|iPad|iPod/i.test(ua);
+  // If the app didn't open within 2.5 seconds, Zalo is likely not installed
+  // or the scheme didn't work - show fallback options
+  setTimeout(function() {
+    if (!appOpened) {
+      showFallback();
+    }
+  }, 2500);
 
-  if (isAndroid) {
-    // Android: try intent first, then fallback
-    tryIntent();
-  } else {
-    // iOS and others: try direct navigation
-    tryDirect();
-  }
+  // Secondary timeout: also check after 4 seconds for slower devices
+  setTimeout(function() {
+    if (!appOpened) {
+      showFallback();
+    }
+  }, 4000);
 })();
 </script>
 </body>
