@@ -14,24 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mộc Đậu Decor - Trang sức handmade tinh xảo",
-  description: "Mộc Đậu Decor - Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
+  title: "Mộc Đậu Decor - Quà tặng handmade",
+  description: "Mộc Đậu Decor - Quà tặng handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
   keywords: ["Mộc Đậu Decor", "trang sức", "handmade", "jewelry", "trang sức handmade", "phụ kiện", "đồ handmade", "quà tặng"],
   authors: [{ name: "Mộc Đậu Decor" }],
   icons: {
     icon: "/favicon.svg",
   },
   openGraph: {
-    title: "Mộc Đậu Decor - Trang sức handmade tinh xảo",
-    description: "Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
+    title: "Mộc Đậu Decor - Quà tặng handmade",
+    description: "Quà tặng handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
     url: "https://kemnhung.vercel.app",
     siteName: "Mộc Đậu Decor",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mộc Đậu Decor - Trang sức handmade tinh xảo",
-    description: "Trang sức handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
+    title: "Mộc Đậu Decor - Quà tặng handmade",
+    description: "Quà tặng handmade tinh xảo, mỗi sản phẩm là một tác phẩm nghệ thuật được chế tác tỉ mỉ bằng tay.",
   },
 };
 
