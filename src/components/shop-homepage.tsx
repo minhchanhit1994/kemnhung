@@ -153,49 +153,15 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
 
   const zaloNumber = shopInfo.zalo || shopInfo.phone
   const zaloClean = zaloNumber ? zaloNumber.replace(/^0/, '') : ''
-  // Phone with country code (84 for Vietnam) for Zalo deep link
+  // Phone with country code (84 for Vietnam)
   const zaloWithCC = zaloClean ? `84${zaloClean}` : ''
-  // Web link for desktop (opens Zalo web)
-  const zaloWebLink = zaloClean ? `https://zalo.me/${zaloClean}` : null
-  // Fallback page for mobile
-  const zaloFallbackLink = zaloClean ? `/api/zalo?phone=${zaloClean}&shop=${encodeURIComponent(shopInfo.shopName || 'Mộc Đậu Decor')}` : null
+  // Use chat.zalo.me/?phone= — this is the ONLY reliable link that works for:
+  //   - Personal Zalo accounts (zalo.me/{sđt} is blocked for most accounts)
+  //   - Both mobile and desktop browsers
+  //   - Opens Zalo web chat directly, or prompts to open Zalo app if installed
+  const zaloChatLink = zaloWithCC ? `https://chat.zalo.me/?phone=${zaloWithCC}` : null
   const displayPhone = shopInfo.phone || shopInfo.zalo || ''
   const telLink = displayPhone ? `tel:${displayPhone}` : null
-
-  // Zalo click handler
-  // Desktop: open https://zalo.me/ directly (Zalo web works fine)
-  // iOS: use zalo:// URI scheme with country code (84 prefix)
-  // Android: use intent:// URL which Chrome allows programmatically
-  //   intent:// has built-in fallback URL when app can't handle it
-  const handleZaloClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!zaloClean || !zaloWebLink) return
-    const ua = navigator.userAgent || ''
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua)
-    if (!isMobile) return // Desktop: let <a href="https://zalo.me/..."> work normally
-
-    e.preventDefault()
-
-    const isIOS = /iPhone|iPad|iPod/i.test(ua)
-    const isAndroid = /Android/i.test(ua)
-
-    if (isIOS) {
-      // iOS Safari handles zalo:// custom URI scheme natively
-      // Use country code (84) prefix for Vietnam phone numbers
-      window.location.href = `zalo://conversation?phone=${zaloWithCC}`
-    } else if (isAndroid) {
-      // Android Chrome BLOCKS custom URI schemes (zalo://) programmatically
-      // But Chrome ALLOWS intent:// URLs (they have built-in fallback handling)
-      // Format: intent://<path>#Intent;scheme=<scheme>;package=<pkg>;S.browser_fallback_url=<url>;end
-      // This tells Chrome: try zalo://conversation?phone=84xxx via Zalo app,
-      // if app can't handle it, fall back to the URL below
-      const fallback = encodeURIComponent(zaloFallbackLink || zaloWebLink)
-      const intentUrl = `intent://conversation?phone=${zaloWithCC}#Intent;scheme=zalo;package=com.zing.zalo;S.browser_fallback_url=${fallback};end`
-      window.location.href = intentUrl
-    } else {
-      // Other mobile browsers: try direct scheme, fallback to redirect page
-      window.location.href = `zalo://conversation?phone=${zaloWithCC}`
-    }
-  }, [zaloClean, zaloWebLink, zaloWithCC, zaloFallbackLink])
 
   const shopNameParts = shopInfo.shopName || 'Mộc Đậu Decor'
   const nameWords = shopNameParts.trim().split(/\s+/)
@@ -277,8 +243,8 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
               <ShoppingBag className="w-5 h-5" />
               Xem sản phẩm
             </a>
-            {zaloWebLink ? (
-              <a href={zaloWebLink} onClick={handleZaloClick} className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
+            {zaloChatLink ? (
+              <a href={zaloChatLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white/70 hover:bg-white border border-white/80 px-8 py-3 rounded-full transition-colors text-forest-dark font-medium">
                 <MessageCircle className="w-5 h-5" />
                 Liên hệ đặt hàng
               </a>
@@ -411,10 +377,11 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                     {displayPhone}
                   </a>
                 )}
-                {zaloWebLink && (
+                {zaloChatLink && (
                   <a
-                    href={zaloWebLink}
-                    onClick={handleZaloClick}
+                    href={zaloChatLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-1.5 hover:text-tan transition-colors"
                     title="Chat Zalo"
                   >
@@ -519,10 +486,11 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 </Badge>
               </div>
 
-              {zaloWebLink ? (
+              {zaloChatLink ? (
                 <a
-                  href={zaloWebLink}
-                  onClick={handleZaloClick}
+                  href={zaloChatLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full bg-forest hover:bg-forest-dark text-white font-semibold py-3 rounded-xl transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" />
