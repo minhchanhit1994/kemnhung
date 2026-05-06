@@ -97,12 +97,14 @@ export default function Home() {
     try {
       const saved = localStorage.getItem('kn_admin')
       const data = saved ? JSON.parse(saved) : {}
+      const oldPassword = prompt('Nhập mật khẩu cũ:')
+      if (!oldPassword) return
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: data.username,
-          oldPassword: prompt('Nhập mật khẩu cũ:'),
+          currentPassword: oldPassword,
           newPassword,
         }),
       })
