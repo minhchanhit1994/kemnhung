@@ -86,6 +86,7 @@ import {
   RefreshCw,
   ExternalLink,
   BookOpen,
+  Wrench,
 } from 'lucide-react'
 import {
   BarChart,
@@ -110,6 +111,8 @@ import type {
   BlogPost,
 } from '@/lib/types'
 import BlogAdmin from '@/components/blog-admin'
+import WatermarkStudio from '@/components/tools/watermark-studio'
+
 
 interface AdminPanelProps {
   onBack: () => void
@@ -1207,6 +1210,10 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">Cài đặt</span>
+            </TabsTrigger>
+            <TabsTrigger value="tools" className="gap-2 data-[state=active]:bg-mint-dark/30 data-[state=active]:text-forest-dark">
+              <Wrench className="w-4 h-4" />
+              <span className="hidden sm:inline">Công cụ</span>
             </TabsTrigger>
           </TabsList>
 
@@ -3602,6 +3609,9 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+          <TabsContent value="tools">
+            <WatermarkStudio />
           </TabsContent>
         </Tabs>
       </div>
