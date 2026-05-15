@@ -25,6 +25,7 @@ Dự án quản lý cửa hàng Mộc Đậu Studio, bao gồm quản lý kho (n
 - **Task 1:** Thêm tab Đơn hàng, hỗ trợ upload video sản phẩm, hiển thị tồn kho giữ chỗ.
 - **Task 2:** Xây dựng hệ thống theo dõi sản phẩm và thống kê (Analytics).
 - **Task 3:** Di chuyển hệ thống thống kê sang Supabase với giao diện tự động cài đặt.
+- **Task 4:** Tích hợp công cụ đóng dấu ảnh (Watermark Studio) vào menu Công cụ của Admin Panel.
 
 ## 🔗 Kết nối GitHub
 - **Repository:** `https://github.com/minhchanhit1994/kemnhung.git`
