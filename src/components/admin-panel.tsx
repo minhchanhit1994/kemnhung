@@ -66,6 +66,7 @@ import {
   CheckCircle2,
   XCircle,
   Eye,
+  EyeOff,
   ShoppingCart,
   Clock,
   Settings,
@@ -727,6 +728,25 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       console.error('Save error:', error)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const toggleProductVisibility = async (product: { id: string; name: string; isActive: boolean }) => {
+    const action = product.isActive ? 'ẩn' : 'hiện'
+    if (!confirm(`Bạn có chắc muốn ${action} sản phẩm "${product.name}" khỏi trang chủ?`)) return
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !product.isActive }),
+      })
+      if (res.ok) fetchAll()
+      else {
+        const err = await res.json()
+        alert(err.error || `Lỗi ${action} sản phẩm`)
+      }
+    } catch (error) {
+      console.error('Toggle error:', error)
     }
   }
 
@@ -1771,6 +1791,15 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                                         <Video className="w-4 h-4" />
                                       </Button>
                                     )}
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      title={product.isActive ? 'Ẩn khỏi trang chủ' : 'Hiện trên trang chủ'}
+                                      className={product.isActive ? 'text-amber-500 hover:text-amber-600' : 'text-forest hover:text-forest-dark'}
+                                      onClick={() => toggleProductVisibility(product)}
+                                    >
+                                      {product.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </Button>
                                     <Button size="icon" variant="ghost" onClick={() => openProductDialog(product)}>
                                       <Pencil className="w-4 h-4" />
                                     </Button>
