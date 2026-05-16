@@ -122,9 +122,11 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">
-                        <div>{product.name}</div>
-                        <div className="text-[10px] text-muted-foreground line-clamp-1">{product.description}</div>
+                      <TableCell className="font-medium max-w-[200px] sm:max-w-[300px]">
+                        <div className="truncate" title={product.name}>{product.name}</div>
+                        <div className="text-[10px] text-muted-foreground truncate" title={product.description}>
+                          {product.description}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right font-semibold text-forest">
                         {formatPrice(product.price)}
