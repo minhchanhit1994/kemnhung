@@ -1,104 +1,22 @@
-'use client'
-
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { useState, useEffect, useCallback, useMemo, useRef, useDeferredValue } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  BarChart3,
   FlaskConical,
-  Package,
-  Plus,
-  Pencil,
-  Trash2,
-  Upload,
-  Image as ImageIcon,
-  Save,
-  ArrowLeft,
   LogOut,
   KeyRound,
-  Shield,
-  Search,
-  AlertTriangle,
   Hammer,
-  ArrowDownToLine,
-  History,
-  Calculator,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  DollarSign,
   ClipboardList,
-  Video,
-  X,
-  User,
-  Phone,
-  MapPin,
-  CheckCircle2,
-  XCircle,
-  Eye,
-  EyeOff,
-  ShoppingCart,
-  Clock,
   Settings,
-  Store,
-  MessageCircle,
-  Loader2,
-  Printer,
   Ban,
   ChartSpline,
-  Star,
-  ArrowUp,
-  ArrowDown,
-  Users,
-  SearchCode,
-  Database,
-  Copy,
-  RefreshCw,
-  ExternalLink,
-  BookOpen,
   Wrench,
-  TableCellsSplit,
+  BookOpen,
+  BarChart3,
+  ArrowLeft,
 } from 'lucide-react'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import type {
   Product,
   RawMaterial,
@@ -109,105 +27,34 @@ import type {
   OrderItem,
   ShopInfo,
   WasteRecord,
-  BlogPost,
 } from '@/lib/types'
 import BlogAdmin from '@/components/blog-admin'
 import WatermarkStudio from '@/components/tools/watermark-studio'
 
+// Sub-components
+import { DashboardStats, AnalyticsData } from './admin-panel/types'
+import { formatPrice, formatDate, formatDateShort, getTimeAgo } from './admin-panel/utils'
+import DashboardTab from './admin-panel/DashboardTab'
+import MaterialsTab from './admin-panel/MaterialsTab'
+import ProductionTab from './admin-panel/ProductionTab'
+import OrdersTab from './admin-panel/OrdersTab'
+import WasteTab from './admin-panel/WasteTab'
+import AnalyticsTab from './admin-panel/AnalyticsTab'
+import SettingsTab from './admin-panel/SettingsTab'
+
+// Dialogs
+import MaterialDialog from './admin-panel/MaterialDialog'
+import ImportDialog from './admin-panel/ImportDialog'
+import ProductDialog from './admin-panel/ProductDialog'
+import ProductionDialog from './admin-panel/ProductionDialog'
+import OrderDialog from './admin-panel/OrderDialog'
+import OrderDetailDialog from './admin-panel/OrderDetailDialog'
 
 interface AdminPanelProps {
   onBack: () => void
   onLogout: () => void
   username: string
   onChangePassword: () => void
-}
-
-interface DashboardStats {
-  totalRawMaterials: number
-  lowStockMaterials: { id: string; name: string; currentStock: number; minStock: number; unit: string }[]
-  totalProducts: number
-  activeProducts: number
-  totalProductionOrders: number
-  recentProductionOrders: ProductionOrder[]
-  totalRevenue: number
-  recentOrders: Order[]
-  totalCapital: number
-  totalProductionCost: number
-  totalCogs: number
-  totalProfit: number
-  totalWasteCost: number
-  monthlyFinance: { month: string; revenue: number; capital: number; profit: number }[]
-}
-
-const MATERIAL_UNITS = ['cái', 'gam', 'cm', 'm', 'l', 'cuộn', 'tấm', 'bộ', 'hộp', 'chiếc']
-
-const PRODUCTION_STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-}
-
-const PRODUCTION_STATUS_LABELS: Record<string, string> = {
-  pending: 'Chờ sản xuất',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
-}
-
-const ORDER_STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-}
-
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  pending: 'Chờ xác nhận hoàn thành',
-  completed: 'Hoàn thành',
-  cancelled: 'Đã hủy',
-}
-
-interface AnalyticsOverview {
-  totalPageViews: number
-  todayPageViews: number
-  totalProductViews: number
-  todayProductViews: number
-  totalSearches: number
-  uniqueVisitors: number
-  todayVisitors: number
-}
-
-interface AnalyticsDailyTraffic {
-  date: string
-  pageViews: number
-  productViews: number
-  searches: number
-  visitors: number
-}
-
-interface AnalyticsTopProduct {
-  productId: string
-  productName: string
-  views: number
-  uniqueViews: number
-}
-
-interface AnalyticsSearchTerm {
-  query: string
-  count: number
-  resultsCount: number
-}
-
-interface AnalyticsRecentActivity {
-  type: string
-  detail: string
-  time: string
-}
-
-interface AnalyticsStats {
-  overview: AnalyticsOverview
-  dailyTraffic: AnalyticsDailyTraffic[]
-  topProducts: AnalyticsTopProduct[]
-  searchTerms: AnalyticsSearchTerm[]
-  recentActivity: AnalyticsRecentActivity[]
 }
 
 export default function AdminPanel({ onBack, onLogout, username, onChangePassword }: AdminPanelProps) {
@@ -233,6 +80,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const [wasteRecords, setWasteRecords] = useState<WasteRecord[]>([])
   const [wasteForm, setWasteForm] = useState({ materialId: '', quantity: '', note: 'Sản phẩm lỗi' })
   const [wasteSearch, setWasteSearch] = useState('')
+  const [wasteSearchInput, setWasteSearchInput] = useState('')
+  const [wasteBulkQuantities, setWasteBulkQuantities] = useState<Record<string, string>>({})
   const [wasteSaving, setWasteSaving] = useState(false)
 
   // === Shop Info ===
@@ -245,9 +94,13 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   })
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
+  const [materialPage, setMaterialPage] = useState(1)
+  const materialItemsPerPage = 10
+  const [txPage, setTxPage] = useState(1)
+  const txItemsPerPage = 15
 
   // === Analytics ===
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsStats | null>(null)
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [analyticsPeriod, setAnalyticsPeriod] = useState(7)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [dbSetupStatus, setDbSetupStatus] = useState<'loading' | 'connected' | 'needs_setup' | 'not_configured' | 'error'>('loading')
@@ -259,8 +112,11 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   // === UI State ===
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [productSearch, setProductSearch] = useState('')
+  const [productSearchInput, setProductSearchInput] = useState('')
   const [orderSearch, setOrderSearch] = useState('')
+  const [orderSearchInput, setOrderSearchInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadingVideo, setUploadingVideo] = useState(false)
@@ -295,6 +151,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const [recipeMaterials, setRecipeMaterials] = useState<{ materialId: string; quantity: string }[]>([])
   const [newRecipeMaterial, setNewRecipeMaterial] = useState({ materialId: '', quantity: '' })
   const [recipeSearch, setRecipeSearch] = useState('')
+  const [recipeSearchInput, setRecipeSearchInput] = useState('')
   const [isBulkMode, setIsBulkMode] = useState(false)
   const [bulkQuantities, setBulkQuantities] = useState<Record<string, string>>({})
 
@@ -413,6 +270,36 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     fetchAll()
   }, [fetchAll])
 
+  // Debounce search inputs
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput), 300)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setProductSearch(productSearchInput), 300)
+    return () => clearTimeout(timer)
+  }, [productSearchInput])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setOrderSearch(orderSearchInput), 300)
+    return () => clearTimeout(timer)
+  }, [orderSearchInput])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setWasteSearch(wasteSearchInput), 300)
+    return () => clearTimeout(timer)
+  }, [wasteSearchInput])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setRecipeSearch(recipeSearchInput), 300)
+    return () => clearTimeout(timer)
+  }, [recipeSearchInput])
+
+  useEffect(() => {
+    setMaterialPage(1)
+  }, [search])
+
   // Fetch analytics when tab switches to analytics
   useEffect(() => {
     if (activeTab === 'analytics') {
@@ -421,40 +308,11 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     }
   }, [activeTab, analyticsPeriod, fetchAnalytics, checkDbSetup])
 
-  // === Helpers ===
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)
+  // === Helpers moved to utils.ts ===
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-
-  const formatDateShort = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
-
-  const getTimeAgo = (dateStr: string): string => {
-    const now = new Date()
-    const date = new Date(dateStr)
-    const diffMs = now.getTime() - date.getTime()
-    const diffSeconds = Math.floor(diffMs / 1000)
-    const diffMinutes = Math.floor(diffSeconds / 60)
-    const diffHours = Math.floor(diffMinutes / 60)
-    const diffDays = Math.floor(diffHours / 24)
-    if (diffSeconds < 60) return 'Vừa xong'
-    if (diffMinutes < 60) return `${diffMinutes} phút trước`
-    if (diffHours < 24) return `${diffHours} giờ trước`
-    if (diffDays < 7) return `${diffDays} ngày trước`
-    return formatDateShort(dateStr)
-  }
+  const deferredSearch = useDeferredValue(search)
+  const deferredProductSearch = useDeferredValue(productSearch)
+  const deferredOrderSearch = useDeferredValue(orderSearch)
 
   // === Computed Values ===
   const lowStockMaterials = useMemo(
@@ -468,8 +326,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   )
 
   const filteredProducts = useMemo(
-    () => products.filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase())),
-    [products, productSearch]
+    () => products.filter((p) => p.name.toLowerCase().includes(deferredProductSearch.toLowerCase())),
+    [products, deferredProductSearch]
   )
 
   // Reserved stock per product (from pending orders)
@@ -485,7 +343,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   }, [orders])
 
   const filteredOrders = useMemo(() => {
-    const s = orderSearch.toLowerCase()
+    const s = deferredOrderSearch.toLowerCase()
     if (!s) return orders
     return orders.filter(
       (o) =>
@@ -493,19 +351,18 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
         o.customerPhone?.toLowerCase().includes(s) ||
         o.id.toLowerCase().includes(s)
     )
-  }, [orders, orderSearch])
+  }, [orders, deferredOrderSearch])
 
   // Order totals
   const orderTotal = useMemo(() => {
     return orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
   }, [orderItems])
 
-  // Production dialog helpers
+  // === Computed Values ===
   const selectedProductionRecipe = useMemo(() => {
-    if (!productionForm.productId) return []
     const product = products.find((p) => p.id === productionForm.productId)
     return product?.productMaterials || []
-  }, [productionForm.productId, products])
+  }, [products, productionForm.productId])
 
   const productionStockCheck = useMemo(() => {
     const qty = Number(productionForm.quantity) || 0
@@ -540,6 +397,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       setEditingMaterial(null)
       setMaterialForm({ name: '', unit: 'cái', description: '', minStock: '10' })
     }
+    setSearch('')
+    setSearchInput('')
     setMaterialDialogOpen(true)
   }
 
@@ -585,6 +444,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const openImportDialog = () => {
     setImportForm({ materialId: '', quantity: '', totalPrice: '', source: '', notes: '' })
     setImportSearch('')
+    setSearchInput('') // Also reset global search
     setImportDropdownOpen(false)
     setImportDialogOpen(true)
   }
@@ -654,6 +514,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     }
     setNewRecipeMaterial({ materialId: '', quantity: '' })
     setRecipeSearch('')
+    setRecipeSearchInput('')
     setIsBulkMode(false)
     setBulkQuantities({})
     setProductDialogOpen(true)
@@ -877,6 +738,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     setOrderForm({ customerName: '', customerPhone: '', customerAddress: '', notes: '' })
     setOrderItems([])
     setNewOrderItem({ productId: '', quantity: '' })
+    setOrderSearch('')
+    setOrderSearchInput('')
     setOrderDialogOpen(true)
   }
 
@@ -1064,44 +927,7 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     }
   }
 
-  const numberToVietnameseWords = (num: number): string => {
-    if (num === 0) return 'không đồng'
-    const units = ['', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín']
-    const tiers = ['', 'ngàn', 'triệu', 'tỷ']
-    let result = ''
-    let tierIndex = 0
-    let n = Math.floor(num)
-    while (n > 0) {
-      const chunk = n % 1000
-      n = Math.floor(n / 1000)
-      if (chunk > 0) {
-        let chunkText = ''
-        const hundreds = Math.floor(chunk / 100)
-        const remainder = chunk % 100
-        if (hundreds > 0) chunkText += units[hundreds] + ' trăm'
-        if (remainder > 0) {
-          if (hundreds > 0 && remainder < 10) chunkText += ' lẻ'
-          const tens = Math.floor(remainder / 10)
-          const ones = remainder % 10
-          if (tens > 1) {
-            chunkText += ' ' + units[tens] + ' mươi'
-            if (ones === 1) chunkText += ' mốt'
-            else if (ones === 5) chunkText += ' lăm'
-            else if (ones > 0) chunkText += ' ' + units[ones]
-          } else if (tens === 1) {
-            chunkText += ' mười'
-            if (ones === 5) chunkText += ' lăm'
-            else if (ones > 0) chunkText += ' ' + units[ones]
-          } else {
-            chunkText += ' ' + units[ones]
-          }
-        }
-        result = chunkText.trim() + ' ' + tiers[tierIndex] + (result ? ' ' + result : '')
-      }
-      tierIndex++
-    }
-    return result.trim().charAt(0).toUpperCase() + result.trim().slice(1) + ' đồng'
-  }
+  // === Settings ===
 
   // === Settings ===
   const saveSettings = async () => {
@@ -1225,2517 +1051,226 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
 
           {/* ==================== Tab 1: TỔNG QUAN ==================== */}
           <TabsContent value="dashboard">
-            <div className="space-y-6">
-              {/* Financial Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="border-l-4 border-l-forest">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Tổng doanh thu</p>
-                        <p className="text-xl font-bold text-forest">{formatPrice(stats?.totalRevenue ?? 0)}</p>
-                      </div>
-                      <DollarSign className="w-8 h-8 text-forest-light" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-orange-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Vốn nhập NL</p>
-                        <p className="text-xl font-bold text-orange-700">{formatPrice(stats?.totalCapital ?? 0)}</p>
-                      </div>
-                      <Wallet className="w-8 h-8 text-orange-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-blue-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Giá vốn SP đã bán</p>
-                        <p className="text-xl font-bold text-blue-700">{formatPrice(stats?.totalCogs ?? 0)}</p>
-                      </div>
-                      <Calculator className="w-8 h-8 text-blue-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className={`border-l-4 ${(stats?.totalProfit ?? 0) >= 0 ? 'border-l-forest' : 'border-l-red-500'}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Lợi nhuận</p>
-                        <p className={`text-xl font-bold ${(stats?.totalProfit ?? 0) >= 0 ? 'text-forest' : 'text-red-700'}`}>
-                          {formatPrice(stats?.totalProfit ?? 0)}
-                        </p>
-                      </div>
-                      {(stats?.totalProfit ?? 0) >= 0 ? (
-                        <TrendingUp className="w-8 h-8 text-forest-light" />
-                      ) : (
-                        <TrendingDown className="w-8 h-8 text-red-500" />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Monthly Chart */}
-              {stats?.monthlyFinance && stats.monthlyFinance.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-forest-light" />
-                      Biểu đồ tài chính theo tháng
-                    </CardTitle>
-                    <CardDescription>Doanh thu, vốn nhập, lợi nhuận</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-80 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={stats.monthlyFinance.map((m) => ({
-                          ...m,
-                          month: m.month.substring(5),
-                        }))} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                          <Tooltip
-                            formatter={(value: number) => formatPrice(value)}
-                            labelFormatter={(label) => `Tháng ${label}`}
-                            contentStyle={{ borderRadius: '8px', fontSize: '13px' }}
-                          />
-                          <Legend formatter={(value) => {
-                            if (value === 'revenue') return 'Doanh thu'
-                            if (value === 'capital') return 'Vốn nhập NL'
-                            if (value === 'profit') return 'Lợi nhuận'
-                            return value
-                          }} />
-                          <Bar dataKey="revenue" fill="#059669" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="capital" fill="#f97316" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="profit" fill={(stats.totalProfit ?? 0) >= 0 ? '#10b981' : '#ef4444'} radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Summary Cards row 2 */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <Card className="border-l-4 border-l-teal-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Nguyên liệu</p>
-                        <p className="text-2xl font-bold">{stats?.totalRawMaterials ?? rawMaterials.length}</p>
-                      </div>
-                      <FlaskConical className="w-8 h-8 text-teal-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-forest">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Thành phẩm</p>
-                        <p className="text-2xl font-bold">{stats?.totalProducts ?? products.length}</p>
-                        <p className="text-xs text-forest">{stats?.activeProducts ?? 0} đang bán</p>
-                      </div>
-                      <Package className="w-8 h-8 text-forest-light" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-purple-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Đơn hàng</p>
-                        <p className="text-2xl font-bold">{orders.length}</p>
-                        <p className="text-xs text-yellow-600">{orders.filter((o) => o.status === 'pending').length} chờ xác nhận</p>
-                      </div>
-                      <ShoppingCart className="w-8 h-8 text-purple-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-rose-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">NL sắp hết</p>
-                        <p className="text-2xl font-bold">{lowStockMaterials.length}</p>
-                      </div>
-                      <AlertTriangle className="w-8 h-8 text-rose-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-red-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Chi phí hao hụt</p>
-                        <p className="text-lg font-bold text-red-700">{formatPrice(stats?.totalWasteCost ?? 0)}</p>
-                      </div>
-                      <Ban className="w-8 h-8 text-red-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Low Stock Alert */}
-              {lowStockMaterials.length > 0 && (
-                <Card className="border-amber-200 bg-amber-50">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2 text-amber-800">
-                      <AlertTriangle className="w-5 h-5" />
-                      Nguyên liệu sắp hết
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {lowStockMaterials.map((m) => (
-                        <Badge
-                          key={m.id}
-                          variant="outline"
-                          className={
-                            m.currentStock <= 0
-                              ? 'text-red-700 border-red-300 bg-white'
-                              : 'text-amber-700 border-amber-300 bg-white'
-                          }
-                        >
-                          {m.name}: {m.currentStock}/{m.minStock} {m.unit}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Recent Orders on Dashboard */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <ShoppingCart className="w-5 h-5 text-purple-500" />
-                      Đơn hàng gần đây
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {orders.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">Chưa có đơn hàng</p>
-                    ) : (
-                      <div className="overflow-x-auto max-h-64 overflow-y-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Khách hàng</TableHead>
-                              <TableHead className="text-right">Tổng tiền</TableHead>
-                              <TableHead>Trạng thái</TableHead>
-                              <TableHead>Ngày</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {orders.slice(0, 5).map((order) => (
-                              <TableRow key={order.id} className="cursor-pointer" onClick={() => viewOrderDetail(order)}>
-                                <TableCell className="font-medium">{order.customerName}</TableCell>
-                                <TableCell className="text-right text-forest font-medium">
-                                  {formatPrice(order.totalAmount)}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge className={ORDER_STATUS_COLORS[order.status] || ''}>
-                                    {ORDER_STATUS_LABELS[order.status] || order.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground">{formatDateShort(order.createdAt)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Recent Production Orders */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Hammer className="w-5 h-5 text-orange-500" />
-                      SX gần đây
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {(!stats?.recentProductionOrders || stats.recentProductionOrders.length === 0) ? (
-                      <p className="text-center text-muted-foreground py-8">Chưa có phiếu sản xuất</p>
-                    ) : (
-                      <div className="overflow-x-auto max-h-64 overflow-y-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Sản phẩm</TableHead>
-                              <TableHead className="text-center">SL</TableHead>
-                              <TableHead>Trạng thái</TableHead>
-                              <TableHead>Ngày</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {stats.recentProductionOrders.map((po) => (
-                              <TableRow key={po.id}>
-                                <TableCell className="font-medium">{po.product?.name || '-'}</TableCell>
-                                <TableCell className="text-center">{po.quantity}</TableCell>
-                                <TableCell>
-                                  <Badge className={PRODUCTION_STATUS_COLORS[po.status] || ''}>
-                                    {PRODUCTION_STATUS_LABELS[po.status] || po.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground">{formatDateShort(po.createdAt)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+            {activeTab === 'dashboard' && (
+              <DashboardTab
+                stats={stats}
+                rawMaterials={rawMaterials}
+                products={products}
+                orders={orders}
+                lowStockMaterials={lowStockMaterials}
+                viewOrderDetail={viewOrderDetail}
+              />
+            )}
           </TabsContent>
 
           {/* ==================== Tab: BLOG ==================== */}
           <TabsContent value="blog">
-            <BlogAdmin />
+            {activeTab === 'blog' && <BlogAdmin />}
           </TabsContent>
 
           {/* ==================== Tab 2: NGUYÊN LIỆU ==================== */}
           <TabsContent value="materials">
-            <div className="space-y-6">
-              {/* Section A: Danh sách nguyên liệu */}
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <FlaskConical className="w-5 h-5 text-teal-500" />
-                        Danh sách nguyên liệu
-                      </CardTitle>
-                      <CardDescription>{rawMaterials.length} nguyên liệu</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Tìm nguyên liệu..."
-                          className="pl-9 w-40 sm:w-48"
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                        />
-                      </div>
-                      <Button onClick={() => openMaterialDialog()} className="bg-forest hover:bg-forest-dark">
-                        <Plus className="w-4 h-4 mr-1" />
-                        Thêm NL
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tên</TableHead>
-                          <TableHead className="text-center">Đơn vị</TableHead>
-                          <TableHead className="text-center">Tồn kho</TableHead>
-                          <TableHead className="text-right">Đơn giá</TableHead>
-                          <TableHead className="text-right">Tổng vốn</TableHead>
-                          <TableHead className="text-center">Thao tác</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredMaterials.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                              {search ? 'Không tìm thấy nguyên liệu' : 'Chưa có nguyên liệu'}
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredMaterials.map((material) => {
-                            const isLow = material.minStock > 0 && material.currentStock <= material.minStock
-                            const isOut = material.currentStock <= 0
-                            return (
-                              <TableRow key={material.id}>
-                                <TableCell className="font-medium">{material.name}</TableCell>
-                                <TableCell className="text-center">{material.unit}</TableCell>
-                                <TableCell className="text-center">
-                                  <Badge
-                                    className={
-                                      isOut
-                                        ? 'bg-red-100 text-red-800'
-                                        : isLow
-                                        ? 'bg-amber-100 text-amber-800'
-                                        : 'bg-mint-dark/30 text-forest-dark'
-                                    }
-                                  >
-                                    {material.currentStock} {material.unit}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right text-muted-foreground">
-                                  {material.unitPrice > 0 ? formatPrice(material.unitPrice) : '-'}
-                                </TableCell>
-                                <TableCell className="text-right text-muted-foreground">
-                                  {material.totalCost > 0 ? formatPrice(material.totalCost) : '-'}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Button size="icon" variant="ghost" onClick={() => openMaterialDialog(material)}>
-                                      <Pencil className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="text-red-500 hover:text-red-600"
-                                      onClick={() => deleteMaterial(material.id)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Section B: Nhập kho & Lịch sử */}
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <ArrowDownToLine className="w-5 h-5 text-forest-light" />
-                        Nhập kho &amp; Lịch sử
-                      </CardTitle>
-                      <CardDescription>Lịch sử nhập/xuất nguyên liệu</CardDescription>
-                    </div>
-                    <Button onClick={openImportDialog} className="bg-forest hover:bg-forest-dark">
-                      <ArrowDownToLine className="w-4 h-4 mr-1" />
-                      Nhập kho
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Ngày</TableHead>
-                          <TableHead>Nguyên liệu</TableHead>
-                          <TableHead className="text-center">Loại</TableHead>
-                          <TableHead className="text-center">SL</TableHead>
-                          <TableHead className="text-right">Đơn giá</TableHead>
-                          <TableHead className="text-right">Tổng tiền</TableHead>
-                          <TableHead>Nguồn</TableHead>
-                          <TableHead>Ghi chú</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {materialTransactions.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                              Chưa có giao dịch
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          materialTransactions.map((tx) => (
-                            <TableRow key={tx.id}>
-                              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                                {formatDateShort(tx.createdAt)}
-                              </TableCell>
-                              <TableCell className="font-medium">{tx.material?.name || '-'}</TableCell>
-                              <TableCell className="text-center">
-                                <Badge
-                                  className={
-                                    tx.type === 'import'
-                                      ? 'bg-mint-dark/30 text-forest-dark'
-                                      : tx.type === 'export'
-                                      ? 'bg-red-100 text-red-800'
-                                      : 'bg-blue-100 text-blue-800'
-                                  }
-                                >
-                                  {tx.type === 'import' ? 'Nhập' : tx.type === 'export' ? 'Xuất' : 'Điều chỉnh'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {tx.quantity} {tx.material?.unit || ''}
-                              </TableCell>
-                              <TableCell className="text-right text-muted-foreground">
-                                {tx.unitPrice > 0 ? formatPrice(tx.unitPrice) : '-'}
-                              </TableCell>
-                              <TableCell className="text-right text-muted-foreground">
-                                {tx.totalPrice > 0 ? formatPrice(tx.totalPrice) : '-'}
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
-                                {tx.source || '-'}
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
-                                {tx.notes || '-'}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {activeTab === 'materials' && (
+              <MaterialsTab
+                rawMaterials={rawMaterials}
+                materialTransactions={materialTransactions}
+                searchInput={searchInput}
+                setSearchInput={setSearchInput}
+                materialPage={materialPage}
+                setMaterialPage={setMaterialPage}
+                materialItemsPerPage={materialItemsPerPage}
+                filteredMaterials={filteredMaterials}
+                txPage={txPage}
+                setTxPage={setTxPage}
+                txItemsPerPage={txItemsPerPage}
+                openMaterialDialog={openMaterialDialog}
+                deleteMaterial={deleteMaterial}
+                openImportDialog={openImportDialog}
+              />
+            )}
           </TabsContent>
 
           {/* ==================== Tab 3: THÀNH PHẨM ==================== */}
           <TabsContent value="production">
-            <div className="space-y-6">
-              {/* Section A: Danh sách thành phẩm */}
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Package className="w-5 h-5 text-forest-light" />
-                        Danh sách thành phẩm
-                      </CardTitle>
-                      <CardDescription>{products.length} sản phẩm</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Tìm sản phẩm..."
-                          className="pl-9 w-40 sm:w-48"
-                          value={productSearch}
-                          onChange={(e) => setProductSearch(e.target.value)}
-                        />
-                      </div>
-                      <Button onClick={() => openProductDialog()} className="bg-forest hover:bg-forest-dark">
-                        <Plus className="w-4 h-4 mr-1" />
-                        Thêm SP
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-16">Ảnh</TableHead>
-                          <TableHead>Tên</TableHead>
-                          <TableHead className="text-right">Giá vốn</TableHead>
-                          <TableHead className="text-right">Giá bán</TableHead>
-                          <TableHead className="text-center">Tồn kho</TableHead>
-                          <TableHead className="text-center">Trạng thái</TableHead>
-                          <TableHead className="text-center">Thao tác</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredProducts.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                              {productSearch ? 'Không tìm thấy sản phẩm' : 'Chưa có sản phẩm'}
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredProducts.map((product) => {
-                            const reserved = reservedStockMap[product.id] || 0
-                            return (
-                              <TableRow key={product.id}>
-                                <TableCell>
-                                  <div className="w-12 h-12 rounded bg-gray-50 flex items-center justify-center overflow-hidden border">
-                                    {product.imageUrl ? (
-                                      <img src={product.imageUrl} alt="" className="w-full h-full object-contain p-1" />
-                                    ) : (
-                                      <ImageIcon className="w-6 h-6 text-gray-300" />
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="max-w-[200px]">
-                                    <p className="font-medium truncate">{product.name}</p>
-                                    {product.videoUrl && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <Video className="w-3 h-3" />
-                                        Có video
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right text-muted-foreground">
-                                  {product.costPrice > 0 ? formatPrice(product.costPrice) : '-'}
-                                </TableCell>
-                                <TableCell className="text-right text-forest font-semibold">
-                                  {formatPrice(product.price)}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {reserved > 0 ? (
-                                    <Badge variant={product.stockQuantity - reserved <= 0 ? 'destructive' : 'secondary'} className="space-x-1">
-                                      <span>{product.stockQuantity - reserved}</span>
-                                      <span className="text-muted-foreground">({reserved})</span>
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant={product.stockQuantity <= 0 ? 'destructive' : 'secondary'}>
-                                      {product.stockQuantity}
-                                    </Badge>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge
-                                    variant={product.isActive ? 'default' : 'outline'}
-                                    className={product.isActive ? 'bg-mint-dark/30 text-forest-dark' : ''}
-                                  >
-                                    {product.isActive ? 'Đang bán' : 'Ẩn'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center justify-center gap-1">
-                                    {product.videoUrl && (
-                                      <Button size="icon" variant="ghost" onClick={() => window.open(product.videoUrl!, '_blank')} title="Xem video">
-                                        <Video className="w-4 h-4" />
-                                      </Button>
-                                    )}
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      title={product.isActive ? 'Ẩn khỏi trang chủ' : 'Hiện trên trang chủ'}
-                                      className={product.isActive ? 'text-amber-500 hover:text-amber-600' : 'text-forest hover:text-forest-dark'}
-                                      onClick={() => toggleProductVisibility(product)}
-                                    >
-                                      {product.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                    </Button>
-                                    <Button size="icon" variant="ghost" onClick={() => openProductDialog(product)}>
-                                      <Pencil className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="text-red-500 hover:text-red-600"
-                                      onClick={() => deleteProduct(product.id)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Section B: Sản xuất */}
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Hammer className="w-5 h-5 text-orange-500" />
-                        Sản xuất
-                      </CardTitle>
-                      <CardDescription>{productionOrders.length} phiếu sản xuất</CardDescription>
-                    </div>
-                    <Button onClick={openProductionDialog} className="bg-forest hover:bg-forest-dark">
-                      <Hammer className="w-4 h-4 mr-1" />
-                      Sản xuất
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Ngày</TableHead>
-                          <TableHead>Sản phẩm</TableHead>
-                          <TableHead className="text-center">SL</TableHead>
-                          <TableHead className="text-right">Giá vốn SX</TableHead>
-                          <TableHead>Trạng thái</TableHead>
-                          <TableHead>Ghi chú</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {productionOrders.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                              Chưa có phiếu sản xuất
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          productionOrders.map((po) => (
-                            <TableRow key={po.id}>
-                              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                                {formatDateShort(po.createdAt)}
-                              </TableCell>
-                              <TableCell className="font-medium">{po.product?.name || '-'}</TableCell>
-                              <TableCell className="text-center">{po.quantity}</TableCell>
-                              <TableCell className="text-right text-muted-foreground">
-                                {po.totalCost > 0 ? formatPrice(po.totalCost) : '-'}
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={PRODUCTION_STATUS_COLORS[po.status] || ''}>
-                                  {PRODUCTION_STATUS_LABELS[po.status] || po.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">
-                                {po.notes || '-'}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {activeTab === 'production' && (
+              <ProductionTab
+                products={products}
+                productionOrders={productionOrders}
+                productSearchInput={productSearchInput}
+                setProductSearchInput={setProductSearchInput}
+                productSearch={productSearch}
+                reservedStockMap={reservedStockMap}
+                filteredProducts={filteredProducts}
+                toggleProductVisibility={toggleProductVisibility}
+                openProductDialog={openProductDialog}
+                deleteProduct={deleteProduct}
+                openProductionDialog={openProductionDialog}
+              />
+            )}
           </TabsContent>
 
           {/* ==================== Tab 4: ĐƠN HÀNG ==================== */}
           <TabsContent value="orders">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <ClipboardList className="w-5 h-5 text-purple-500" />
-                        Danh sách đơn hàng
-                      </CardTitle>
-                      <CardDescription>{orders.length} đơn hàng</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Tìm đơn hàng..."
-                          className="pl-9 w-40 sm:w-48"
-                          value={orderSearch}
-                          onChange={(e) => setOrderSearch(e.target.value)}
-                        />
-                      </div>
-                      <Button onClick={openOrderDialog} className="bg-forest hover:bg-forest-dark">
-                        <Plus className="w-4 h-4 mr-1" />
-                        Tạo đơn
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Mã ĐH</TableHead>
-                          <TableHead>Khách hàng</TableHead>
-                          <TableHead className="hidden sm:table-cell">SĐT</TableHead>
-                          <TableHead className="text-right">Tổng tiền</TableHead>
-                          <TableHead>Trạng thái</TableHead>
-                          <TableHead>Ngày tạo</TableHead>
-                          <TableHead className="text-center">Thao tác</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredOrders.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                              {orderSearch ? 'Không tìm thấy đơn hàng' : 'Chưa có đơn hàng'}
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredOrders.map((order) => (
-                            <TableRow key={order.id}>
-                              <TableCell className="text-xs font-mono text-muted-foreground">
-                                {order.id.substring(0, 8)}...
-                              </TableCell>
-                              <TableCell className="font-medium">{order.customerName}</TableCell>
-                              <TableCell className="hidden sm:table-cell text-muted-foreground">{order.customerPhone || '-'}</TableCell>
-                              <TableCell className="text-right text-forest font-semibold">
-                                {formatPrice(order.totalAmount)}
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={ORDER_STATUS_COLORS[order.status] || ''}>
-                                  {ORDER_STATUS_LABELS[order.status] || order.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                                {formatDateShort(order.createdAt)}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center justify-center gap-1">
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => viewOrderDetail(order)}
-                                    title="Xem chi tiết"
-                                  >
-                                    <Eye className="w-4 h-4" />
-                                  </Button>
-                                  {order.status === 'pending' && (
-                                    <>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="text-green-600 hover:text-green-700"
-                                        disabled={saving}
-                                        onClick={() => updateOrderStatus(order.id, 'completed')}
-                                        title="Xác nhận hoàn thành"
-                                      >
-                                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                                      </Button>
-                                      <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        className="text-red-500 hover:text-red-600"
-                                        disabled={saving}
-                                        onClick={() => {
-                                          if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
-                                            updateOrderStatus(order.id, 'cancelled')
-                                          }
-                                        }}
-                                        title="Hủy đơn hàng"
-                                      >
-                                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                                      </Button>
-                                    </>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {activeTab === 'orders' && (
+              <OrdersTab
+                orders={orders}
+                orderSearchInput={orderSearchInput}
+                setOrderSearchInput={setOrderSearchInput}
+                filteredOrders={filteredOrders}
+                viewOrderDetail={viewOrderDetail}
+                updateOrderStatus={updateOrderStatus}
+                openOrderDialog={openOrderDialog}
+                saving={saving}
+              />
+            )}
           </TabsContent>
 
       {/* ==================== DIALOGS ==================== */}
 
-      {/* Material Form Dialog */}
-      <Dialog open={materialDialogOpen} onOpenChange={setMaterialDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingMaterial ? 'Sửa nguyên liệu' : 'Thêm nguyên liệu'}</DialogTitle>
-            <DialogDescription>
-              {editingMaterial ? 'Cập nhật thông tin nguyên liệu' : 'Nhập thông tin nguyên liệu mới'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Tên nguyên liệu</Label>
-              <Input
-                value={materialForm.name}
-                onChange={(e) => setMaterialForm({ ...materialForm, name: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">VD: Dây thừng, Vải canvas, Dây xích...</p>
-            </div>
-            <div>
-              <Label>Đơn vị</Label>
-              <Select value={materialForm.unit} onValueChange={(v) => setMaterialForm({ ...materialForm, unit: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MATERIAL_UNITS.map((u) => (
-                    <SelectItem key={u} value={u}>
-                      {u}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Mô tả</Label>
-              <Textarea
-                value={materialForm.description}
-                onChange={(e) => setMaterialForm({ ...materialForm, description: e.target.value })}
-                rows={2}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Mô tả thêm (không bắt buộc)</p>
-            </div>
-            <div>
-              <Label>Mức cảnh báo (tồn kho tối thiểu)</Label>
-              <Input
-                type="number"
-                value={materialForm.minStock}
-                onChange={(e) => setMaterialForm({ ...materialForm, minStock: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">VD: 10</p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMaterialDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button onClick={saveMaterial} disabled={saving || !materialForm.name} className="bg-forest hover:bg-forest-dark">
-              {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
-              {editingMaterial ? 'Cập nhật' : 'Thêm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MaterialDialog
+        open={materialDialogOpen}
+        onOpenChange={setMaterialDialogOpen}
+        editingMaterial={editingMaterial}
+        materialForm={materialForm}
+        setMaterialForm={setMaterialForm}
+        saveMaterial={saveMaterial}
+        saving={saving}
+      />
 
-      {/* Import Dialog */}
-      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Nhập kho nguyên liệu</DialogTitle>
-            <DialogDescription>Thêm nguyên liệu vào kho, hệ thống tự tính đơn giá trung bình</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Chọn nguyên liệu</Label>
-              <div className="relative">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Gõ để tìm nguyên liệu..."
-                    value={importForm.materialId
-                      ? rawMaterials.find(m => m.id === importForm.materialId)?.name || ''
-                      : importSearch
-                    }
-                    onChange={(e) => {
-                      setImportSearch(e.target.value)
-                      setImportForm(prev => ({ ...prev, materialId: '' }))
-                      setImportDropdownOpen(true)
-                    }}
-                    onFocus={() => setImportDropdownOpen(true)}
-                    onBlur={() => setTimeout(() => setImportDropdownOpen(false), 200)}
-                    className="pl-9 pr-8"
-                  />
-                  {importForm.materialId && (
-                    <button
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        setImportForm(prev => ({ ...prev, materialId: '' }))
-                        setImportSearch('')
-                      }}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-                {importDropdownOpen && !importForm.materialId && (
-                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md">
-                    {(() => {
-                      const q = importSearch.toLowerCase().trim()
-                      const filtered = q
-                        ? rawMaterials.filter(m => m.name.toLowerCase().includes(q))
-                        : rawMaterials
-                      if (filtered.length === 0) {
-                        return <div className="p-3 text-sm text-muted-foreground text-center">Không tìm thấy nguyên liệu</div>
-                      }
-                      return filtered.map((m) => (
-                        <button
-                          key={m.id}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between ${m.currentStock <= m.minStock && m.minStock > 0 ? 'border-l-2 border-l-orange-400' : ''}`}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            setImportForm(prev => ({ ...prev, materialId: m.id }))
-                            setImportDropdownOpen(false)
-                          }}
-                        >
-                          <span className="font-medium">{m.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2 shrink-0">
-                            {m.currentStock} {m.unit}
-                            {m.currentStock <= m.minStock && m.minStock > 0 && <span className="text-orange-500 ml-1">⚠️</span>}
-                          </span>
-                        </button>
-                      ))
-                    })()}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label>Số lượng</Label>
-              <Input
-                type="number"
-                step="any"
-                value={importForm.quantity}
-                onChange={(e) => setImportForm({ ...importForm, quantity: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">VD: 100</p>
-            </div>
-            <div>
-              <Label>Tổng tiền (VNĐ)</Label>
-              <Input
-                type="number"
-                step="any"
-                value={importForm.totalPrice}
-                onChange={(e) => setImportForm({ ...importForm, totalPrice: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">VD: 500000</p>
-            </div>
-            <div>
-              <Label>Nguồn nhập hàng</Label>
-              <Input
-                value={importForm.source}
-                onChange={(e) => setImportForm({ ...importForm, source: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Tên shop, người bán hoặc link sản phẩm để tra cứu lại. VD: Shop ABC trên Shopee</p>
-            </div>
-            <div>
-              <Label>Ghi chú</Label>
-              <Textarea
-                value={importForm.notes}
-                onChange={(e) => setImportForm({ ...importForm, notes: e.target.value })}
-                rows={2}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Ghi chú (không bắt buộc)</p>
-            </div>
-            {importForm.quantity && importForm.totalPrice && Number(importForm.quantity) > 0 && (
-              <div className="bg-gray-50 rounded-md p-3 text-sm text-muted-foreground">
-                Đơn giá dự kiến:{' '}
-                <span className="font-medium text-foreground">
-                  {formatPrice(Number(importForm.totalPrice) / Number(importForm.quantity))}
-                </span>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button
-              onClick={saveImport}
-              disabled={saving || !importForm.materialId || !importForm.quantity}
-              className="bg-forest hover:bg-forest-dark"
-            >
-              {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
-              Nhập kho
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        importForm={importForm}
+        setImportForm={setImportForm}
+        importSearch={importSearch}
+        setImportSearch={setImportSearch}
+        importDropdownOpen={importDropdownOpen}
+        setImportDropdownOpen={setImportDropdownOpen}
+        rawMaterials={rawMaterials}
+        saveImport={saveImport}
+        saving={saving}
+      />
 
-      {/* Product Form Dialog */}
-      <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</DialogTitle>
-            <DialogDescription>
-              {editingProduct ? 'Cập nhật thông tin sản phẩm' : 'Nhập thông tin sản phẩm mới'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>Tên sản phẩm</Label>
-                <Input
-                  value={productForm.name}
-                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">VD: Túi tote vải canvas</p>
-              </div>
-              <div>
-                <Label>Đơn vị</Label>
-                <Select value={productForm.unit} onValueChange={(v) => setProductForm({ ...productForm, unit: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {['cái', 'chiếc', 'bộ', 'hộp'].map((u) => (
-                      <SelectItem key={u} value={u}>
-                        {u}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label>Mô tả</Label>
-              <Textarea
-                value={productForm.description}
-                onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                rows={2}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Mô tả sản phẩm (không bắt buộc)</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>Giá bán (VNĐ)</Label>
-                <Input
-                  type="number"
-                  step="any"
-                  value={productForm.price}
-                  onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">VD: 150000</p>
-              </div>
-              <div className="flex items-end">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="is-active"
-                    checked={productForm.isActive}
-                    onCheckedChange={(checked) => setProductForm({ ...productForm, isActive: checked === true })}
-                  />
-                  <Label htmlFor="is-active">Đang bán</Label>
-                </div>
-              </div>
-            </div>
+      <ProductDialog
+        open={productDialogOpen}
+        onOpenChange={setProductDialogOpen}
+        editingProduct={editingProduct}
+        productForm={productForm}
+        setProductForm={setProductForm}
+        handleImageUpload={handleImageUpload}
+        uploading={uploading}
+        handleVideoUpload={handleVideoUpload}
+        uploadingVideo={uploadingVideo}
+        videoInputRef={videoInputRef}
+        recipeTotalCost={recipeTotalCost}
+        recipeMaterials={recipeMaterials}
+        setRecipeMaterials={setRecipeMaterials}
+        rawMaterials={rawMaterials}
+        recipeSearchInput={recipeSearchInput}
+        setRecipeSearchInput={setRecipeSearchInput}
+        recipeSearch={recipeSearch}
+        bulkQuantities={bulkQuantities}
+        setBulkQuantities={setBulkQuantities}
+        removeRecipeMaterial={removeRecipeMaterial}
+        saveProduct={saveProduct}
+        saving={saving}
+      />
 
-            {/* Image Upload */}
-            <div>
-              <Label>Ảnh sản phẩm</Label>
-              <div className="flex items-center gap-4 mt-1">
-                <div className="w-20 h-20 rounded border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
-                  {productForm.imageUrl ? (
-                    <img src={productForm.imageUrl} alt="" className="w-full h-full object-contain p-1" />
-                  ) : (
-                    <ImageIcon className="w-8 h-8 text-gray-300" />
-                  )}
-                </div>
-                <div>
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                    />
-                    <Button type="button" variant="outline" size="sm" disabled={uploading} asChild>
-                      <span>
-                        <Upload className="w-4 h-4 mr-1" />
-                        {uploading ? 'Đang upload...' : 'Tải ảnh lên'}
-                      </span>
-                    </Button>
-                  </label>
-                  {productForm.imageUrl && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 text-xs mt-1"
-                      onClick={() => setProductForm({ ...productForm, imageUrl: '' })}
-                    >
-                      Xóa ảnh
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
+      <ProductionDialog
+        open={productionDialogOpen}
+        onOpenChange={setProductionDialogOpen}
+        productionForm={productionForm}
+        setProductionForm={setProductionForm}
+        products={products}
+        selectedProductionRecipe={selectedProductionRecipe}
+        productionStockCheck={productionStockCheck}
+        saveProductionOrder={saveProductionOrder}
+        saving={saving}
+      />
 
-            {/* Video Upload */}
-            <div>
-              <Label className="flex items-center gap-2">
-                <Video className="w-4 h-4" />
-                Video sản phẩm (tối đa 30 giây)
-              </Label>
-              <div className="mt-1 space-y-2">
-                {productForm.videoUrl ? (
-                  <div className="relative rounded-lg overflow-hidden border bg-gray-50">
-                    <video
-                      src={productForm.videoUrl}
-                      controls
-                      className="w-full max-h-48 object-contain"
-                      preload="metadata"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-7 w-7"
-                      onClick={() => setProductForm({ ...productForm, videoUrl: '' })}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <label className="cursor-pointer">
-                      <input
-                        ref={videoInputRef}
-                        type="file"
-                        accept="video/mp4,video/webm,video/quicktime"
-                        className="hidden"
-                        onChange={handleVideoUpload}
-                        disabled={uploadingVideo}
-                      />
-                      <Button type="button" variant="outline" size="sm" disabled={uploadingVideo} asChild>
-                        <span>
-                          <Video className="w-4 h-4 mr-1" />
-                          {uploadingVideo ? 'Đang upload video...' : 'Tải video lên'}
-                        </span>
-                      </Button>
-                    </label>
-                    <span className="text-xs text-muted-foreground">MP4, WebM, MOV - tối đa 30 giây</span>
-                  </div>
-                )}
-              </div>
-            </div>
+      <OrderDialog
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+        orderForm={orderForm}
+        setOrderForm={setOrderForm}
+        orderItems={orderItems}
+        removeOrderItem={removeOrderItem}
+        newOrderItem={newOrderItem}
+        setNewOrderItem={setNewOrderItem}
+        products={products}
+        reservedStockMap={reservedStockMap}
+        addOrderItem={addOrderItem}
+        orderTotal={orderTotal}
+        saveOrder={saveOrder}
+        saving={saving}
+      />
 
-            {/* === CÔNG THỨC (Recipe) === */}
-            <div className="border rounded-lg p-4 bg-gray-50 space-y-4">
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <Calculator className="w-5 h-5 text-forest" />
-                  <h3 className="font-semibold text-sm">CÔNG THỨC</h3>
-                </div>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  className={`text-[10px] h-7 gap-1 ${isBulkMode ? 'bg-forest text-white' : ''}`}
-                  onClick={() => setIsBulkMode(!isBulkMode)}
-                >
-                  <TableCellsSplit className="w-3 h-3" />
-                  {isBulkMode ? 'Đóng chọn nhanh' : 'Chọn nhanh từ danh sách'}
-                </Button>
-              </div>
+      <OrderDetailDialog
+        open={orderDetailDialogOpen}
+        onOpenChange={setOrderDetailDialogOpen}
+        selectedOrder={selectedOrder}
+        printInvoice={printInvoice}
+        updateOrderStatus={updateOrderStatus}
+        saving={saving}
+      />
 
-              {/* Selected List - Always visible if items exist */}
-              {recipeMaterials.length > 0 && !isBulkMode && (
-                <div className="space-y-2 mb-3 max-h-48 overflow-y-auto pr-1">
-                  {recipeMaterials.map((rm, idx) => {
-                    const mat = rawMaterials.find((m) => m.id === rm.materialId)
-                    const qty = Number(rm.quantity) || 0
-                    const unitPrice = mat?.unitPrice || 0
-                    const cost = qty * unitPrice
-                    return (
-                      <div key={idx} className="flex items-center gap-2 bg-white rounded-md p-2 text-xs border">
-                        <span className="font-medium flex-1">{mat?.name || 'NL không xác định'}</span>
-                        <span className="text-muted-foreground">&times; {qty} {mat?.unit || ''}</span>
-                        <span className="text-muted-foreground">{formatPrice(unitPrice)}</span>
-                        <span className="font-medium w-24 text-right">{formatPrice(cost)}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-red-500 hover:text-red-600"
-                          onClick={() => removeRecipeMaterial(idx)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {isBulkMode ? (
-                <div className="space-y-3 animate-in fade-in duration-300">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                    <Input
-                      placeholder="Lọc nguyên liệu..."
-                      className="h-8 text-xs pl-8"
-                      value={recipeSearch}
-                      onChange={(e) => setRecipeSearch(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="bg-white rounded-md border overflow-hidden">
-                    <div className="max-h-60 overflow-y-auto">
-                      <Table>
-                        <TableHeader className="bg-gray-50 sticky top-0 z-10">
-                          <TableRow>
-                            <TableHead className="w-10 text-center"></TableHead>
-                            <TableHead className="text-xs">Nguyên liệu</TableHead>
-                            <TableHead className="text-xs text-right">Giá gốc</TableHead>
-                            <TableHead className="text-xs w-24">Số lượng</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {rawMaterials
-                            .filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()))
-                            .map((m) => {
-                              const isAdded = recipeMaterials.some(rm => rm.materialId === m.id)
-                              return (
-                                <TableRow key={m.id} className={isAdded ? 'bg-mint-light/20' : ''}>
-                                  <TableCell className="p-2 text-center">
-                                    <Checkbox 
-                                      checked={isAdded || !!bulkQuantities[m.id]} 
-                                      disabled={isAdded}
-                                      onCheckedChange={(checked) => {
-                                        if (checked) {
-                                          setBulkQuantities(prev => ({ ...prev, [m.id]: '' }))
-                                        } else {
-                                          setBulkQuantities(prev => {
-                                            const next = { ...prev }
-                                            delete next[m.id]
-                                            return next
-                                          })
-                                        }
-                                      }}
-                                    />
-                                  </TableCell>
-                                  <TableCell className="p-2 text-xs font-medium">
-                                    {m.name}
-                                    <div className="text-[10px] text-muted-foreground">{m.unit}</div>
-                                  </TableCell>
-                                  <TableCell className="p-2 text-xs text-right text-muted-foreground">
-                                    {formatPrice(m.unitPrice)}
-                                  </TableCell>
-                                  <TableCell className="p-2">
-                                    <Input
-                                      type="number"
-                                      step="any"
-                                      className="h-7 text-xs px-2"
-                                      placeholder="0"
-                                      disabled={isAdded && !bulkQuantities[m.id]}
-                                      value={isAdded ? (recipeMaterials.find(rm => rm.materialId === m.id)?.quantity || '') : (bulkQuantities[m.id] || '')}
-                                      onChange={(e) => {
-                                        const val = e.target.value
-                                        if (isAdded) {
-                                          // Update existing recipe material quantity
-                                          setRecipeMaterials(prev => prev.map(rm => rm.materialId === m.id ? { ...rm, quantity: val } : rm))
-                                        } else {
-                                          setBulkQuantities(prev => ({ ...prev, [m.id]: val }))
-                                        }
-                                      }}
-                                    />
-                                  </TableCell>
-                                </TableRow>
-                              )
-                            })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-
-                  {Object.keys(bulkQuantities).length > 0 && (
-                    <Button 
-                      type="button" 
-                      className="w-full bg-forest hover:bg-forest-dark h-8 text-xs gap-2"
-                      onClick={() => {
-                        const newEntries = Object.entries(bulkQuantities)
-                          .filter(([_, qty]) => Number(qty) > 0)
-                          .map(([id, qty]) => ({ materialId: id, quantity: qty }))
-                        
-                        setRecipeMaterials(prev => [...prev, ...newEntries])
-                        setBulkQuantities({})
-                        setIsBulkMode(false)
-                        toast.success(`Đã thêm ${newEntries.length} nguyên liệu`)
-                      }}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Xác nhận thêm {Object.keys(bulkQuantities).filter(id => Number(bulkQuantities[id]) > 0).length} mục mới
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-end gap-2 mb-3">
-                    <div className="flex-1">
-                      <Label className="text-xs">Nguyên liệu</Label>
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                        <Input
-                          value={newRecipeMaterial.materialId
-                            ? (rawMaterials.find(m => m.id === newRecipeMaterial.materialId)?.name || '')
-                            : recipeSearch}
-                          onChange={(e) => {
-                            const val = e.target.value
-                            setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
-                            setRecipeSearch(val)
-                          }}
-                          onFocus={() => {
-                            if (newRecipeMaterial.materialId) {
-                              setRecipeSearch('')
-                              setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
-                            } else if (recipeSearch === '') {
-                              setRecipeSearch(' ')
-                            }
-                          }}
-                          placeholder="Tìm nguyên liệu..."
-                          className="h-9 text-sm pl-8"
-                        />
-                        {recipeSearch !== '' && (
-                          <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                            {rawMaterials
-                              .filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()) && !recipeMaterials.some((rm) => rm.materialId === m.id))
-                              .slice(0, 10)
-                              .map(m => (
-                                <button
-                                  key={m.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setNewRecipeMaterial({ ...newRecipeMaterial, materialId: m.id })
-                                    setRecipeSearch('')
-                                  }}
-                                  className="w-full text-left px-3 py-2 hover:bg-mint-light transition-colors flex items-center justify-between text-sm"
-                                >
-                                  <span>{m.name}</span>
-                                  <span className="text-xs text-gray-500">
-                                    {formatPrice(m.unitPrice)}/{m.unit}
-                                  </span>
-                                </button>
-                              ))
-                            }
-                            {rawMaterials.filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()) && !recipeMaterials.some((rm) => rm.materialId === m.id)).length === 0 && (
-                              <p className="px-3 py-2 text-sm text-gray-500">Không tìm thấy nguyên liệu</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="w-24">
-                      <Label className="text-xs">Số lượng</Label>
-                      <Input
-                        type="number"
-                        step="any"
-                        className="h-9 text-sm"
-                        value={newRecipeMaterial.quantity}
-                        onChange={(e) => setNewRecipeMaterial({ ...newRecipeMaterial, quantity: e.target.value })}
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-9"
-                      onClick={addRecipeMaterial}
-                      disabled={!newRecipeMaterial.materialId || !newRecipeMaterial.quantity}
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Thêm NL
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              <div className="flex items-center justify-between bg-white rounded-md p-3 border">
-                <span className="font-semibold text-sm">TỔNG GIÁ VỐN</span>
-                <span className="font-bold text-forest text-lg">{formatPrice(recipeTotalCost)}</span>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProductDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button
-              onClick={saveProduct}
-              disabled={saving || !productForm.name}
-              className="bg-forest hover:bg-forest-dark"
-            >
-              {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
-              {editingProduct ? 'Cập nhật' : 'Thêm SP'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Production Dialog */}
-      <Dialog open={productionDialogOpen} onOpenChange={setProductionDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Sản xuất</DialogTitle>
-            <DialogDescription>Tạo phiếu sản xuất, hệ thống tự trừ nguyên liệu và cộng kho thành phẩm</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Chọn sản phẩm</Label>
-              <Select value={productionForm.productId} onValueChange={(v) => setProductionForm({ ...productionForm, productId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn sản phẩm..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {products.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} (còn: {p.stockQuantity})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Số lượng sản xuất</Label>
-              <Input
-                type="number"
-                step="any"
-                value={productionForm.quantity}
-                onChange={(e) => setProductionForm({ ...productionForm, quantity: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">VD: 10</p>
-            </div>
-
-            {selectedProductionRecipe.length > 0 && Number(productionForm.quantity) > 0 && (
-              <div className="border rounded-lg p-3 bg-gray-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <FlaskConical className="w-4 h-4 text-forest" />
-                  <span className="text-sm font-semibold">Kiểm tra nguyên liệu</span>
-                </div>
-                <div className="space-y-1">
-                  {productionStockCheck.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm bg-white rounded-md p-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{item.materialName}</span>
-                        <span className="text-muted-foreground">Cần: {item.needed} {item.unit}</span>
-                      </div>
-                      <span className={item.sufficient ? 'text-forest font-medium' : 'text-red-600 font-medium'}>
-                        Hiện có: {item.available} {item.unit}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {selectedProductionRecipe.length === 0 && productionForm.productId && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                <AlertTriangle className="w-4 h-4 inline mr-1" />
-                Sản phẩm này chưa có công thức nguyên liệu
-              </div>
-            )}
-
-            <div>
-              <Label>Ghi chú</Label>
-              <Textarea
-                value={productionForm.notes}
-                onChange={(e) => setProductionForm({ ...productionForm, notes: e.target.value })}
-                rows={2}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Ghi chú (không bắt buộc)</p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProductionDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button
-              onClick={saveProductionOrder}
-              disabled={
-                saving ||
-                !productionForm.productId ||
-                !productionForm.quantity ||
-                selectedProductionRecipe.length === 0
-              }
-              className="bg-forest hover:bg-forest-dark"
-            >
-              {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
-              <Hammer className="w-4 h-4 mr-1" />
-              Sản xuất
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Order Dialog */}
-      <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Tạo đơn hàng</DialogTitle>
-            <DialogDescription>Nhập thông tin khách hàng và chọn sản phẩm</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Customer Info */}
-            <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <User className="w-4 h-4 text-purple-600" />
-                Thông tin khách hàng
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Tên khách hàng *</Label>
-                  <Input
-                    value={orderForm.customerName}
-                    onChange={(e) => setOrderForm({ ...orderForm, customerName: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">VD: Nguyễn Văn A</p>
-                </div>
-                <div>
-                  <Label className="text-xs">Số điện thoại</Label>
-                  <Input
-                    value={orderForm.customerPhone}
-                    onChange={(e) => setOrderForm({ ...orderForm, customerPhone: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">VD: 0901234567</p>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Địa chỉ giao hàng</Label>
-                <Input
-                  value={orderForm.customerAddress}
-                  onChange={(e) => setOrderForm({ ...orderForm, customerAddress: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">VD: Số 1, Đường ABC, Quận X, TP Y</p>
-              </div>
-              <div>
-                <Label className="text-xs">Ghi chú</Label>
-                <Textarea
-                  value={orderForm.notes}
-                  onChange={(e) => setOrderForm({ ...orderForm, notes: e.target.value })}
-                  rows={2}
-                />
-                <p className="text-xs text-muted-foreground mt-1">Ghi chú đơn hàng (không bắt buộc)</p>
-              </div>
-            </div>
-
-            {/* Order Items */}
-            <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Package className="w-4 h-4 text-forest" />
-                Sản phẩm
-              </h3>
-
-              {orderItems.length > 0 && (
-                <div className="space-y-2">
-                  {orderItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-white rounded-md p-2 text-sm">
-                      <span className="font-medium flex-1">{item.productName}</span>
-                      <span className="text-muted-foreground">&times; {item.quantity}</span>
-                      <span className="text-muted-foreground">{formatPrice(item.unitPrice)}</span>
-                      <span className="font-medium w-28 text-right">{formatPrice(item.unitPrice * item.quantity)}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-red-500 hover:text-red-600"
-                        onClick={() => removeOrderItem(idx)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <Label className="text-xs">Sản phẩm</Label>
-                  <Select
-                    value={newOrderItem.productId}
-                    onValueChange={(v) => setNewOrderItem({ ...newOrderItem, productId: v })}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue placeholder="Chọn sản phẩm..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products
-                        .filter((p) => p.isActive && p.stockQuantity > 0)
-                        .map((p) => {
-                          const reserved = reservedStockMap[p.id] || 0
-                          const available = p.stockQuantity - reserved
-                          return (
-                            <SelectItem key={p.id} value={p.id} disabled={available <= 0}>
-                              {p.name} - {formatPrice(p.price)} (còn: {available})
-                            </SelectItem>
-                          )
-                        })}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="w-24">
-                  <Label className="text-xs">Số lượng</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    className="h-9 text-sm"
-                    value={newOrderItem.quantity}
-                    onChange={(e) => setNewOrderItem({ ...newOrderItem, quantity: e.target.value })}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9"
-                  onClick={addOrderItem}
-                  disabled={!newOrderItem.productId || !newOrderItem.quantity}
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Thêm
-                </Button>
-              </div>
-            </div>
-
-            {/* Order Total */}
-            {orderItems.length > 0 && (
-              <div className="flex items-center justify-between bg-mint-light border border-mint-dark rounded-lg p-4">
-                <span className="font-semibold text-forest-dark">TỔNG TIỀN</span>
-                <span className="font-bold text-forest text-xl">{formatPrice(orderTotal)}</span>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOrderDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button
-              onClick={saveOrder}
-              disabled={saving || !orderForm.customerName || orderItems.length === 0}
-              className="bg-forest hover:bg-forest-dark"
-            >
-              {saving && <Save className="w-4 h-4 mr-1 animate-spin" />}
-              <ShoppingCart className="w-4 h-4 mr-1" />
-              Tạo đơn hàng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Order Detail Dialog */}
-      <Dialog open={orderDetailDialogOpen} onOpenChange={setOrderDetailDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-purple-500" />
-              Chi tiết đơn hàng
-            </DialogTitle>
-            <DialogDescription>Mã: {selectedOrder?.id?.substring(0, 8)}...</DialogDescription>
-          </DialogHeader>
-          {selectedOrder && (
-            <div className="space-y-4">
-              {/* Status */}
-              <div className="flex items-center gap-2">
-                <Badge className={ORDER_STATUS_COLORS[selectedOrder.status] || ''}>
-                  {ORDER_STATUS_LABELS[selectedOrder.status] || selectedOrder.status}
-                </Badge>
-                <span className="text-xs text-muted-foreground">{formatDate(selectedOrder.createdAt)}</span>
-              </div>
-
-              {/* Customer Info */}
-              <div className="border rounded-lg p-3 bg-gray-50 space-y-1">
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium">{selectedOrder.customerName}</span>
-                </div>
-                {selectedOrder.customerPhone && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="w-4 h-4" />
-                    <span>{selectedOrder.customerPhone}</span>
-                  </div>
-                )}
-                {selectedOrder.customerAddress && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>{selectedOrder.customerAddress}</span>
-                  </div>
-                )}
-                {selectedOrder.notes && (
-                  <p className="text-xs text-muted-foreground mt-1">Ghi chú: {selectedOrder.notes}</p>
-                )}
-              </div>
-
-              {/* Order Items */}
-              <div>
-                <h4 className="text-sm font-semibold mb-2">Sản phẩm</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Sản phẩm</TableHead>
-                      <TableHead className="text-center">SL</TableHead>
-                      <TableHead className="text-right">Đơn giá</TableHead>
-                      <TableHead className="text-right">Thành tiền</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(selectedOrder.orderItems || []).map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.productName}</TableCell>
-                        <TableCell className="text-center">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{formatPrice(item.unitPrice)}</TableCell>
-                        <TableCell className="text-right font-medium">{formatPrice(item.unitPrice * item.quantity)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <div className="flex justify-end mt-2 p-3 bg-mint-light rounded-lg border border-mint-dark">
-                  <span className="font-bold text-forest text-lg">
-                    Tổng: {formatPrice(selectedOrder.totalAmount)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Print Invoice - available for pending & completed orders */}
-              {(selectedOrder.status === 'pending' || selectedOrder.status === 'completed') && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2 border-mint-dark text-forest hover:bg-mint-light"
-                    onClick={() => printInvoice(selectedOrder)}
-                  >
-                    <Printer className="w-4 h-4" />
-                    In hóa đơn
-                  </Button>
-                </div>
-              )}
-
-              {/* Complete / Cancel */}
-              {selectedOrder.status === 'pending' && (
-                <div className="flex items-center gap-2 pt-2">
-                  <Button
-                    className="flex-1 bg-forest hover:bg-forest-dark"
-                    disabled={saving}
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'completed')}
-                  >
-                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                    {saving ? 'Đang xử lý...' : 'Xác nhận hoàn thành'}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    disabled={saving}
-                    onClick={() => {
-                      if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
-                        updateOrderStatus(selectedOrder.id, 'cancelled')
-                      }
-                    }}
-                  >
-                    {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
-                    {saving ? 'Đang xử lý...' : 'Hủy đơn'}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-          {/* ==================== Tab 5: HAO HỤT ==================== */}
+      {/* ==================== Tab 5: HAO HỤT ==================== */}
           <TabsContent value="waste">
-            <div className="space-y-6">
-              {/* Waste Input Form */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Ban className="w-5 h-5 text-red-500" />
-                    Ghi nhận hao hụt
-                  </CardTitle>
-                  <CardDescription>
-                    Ghi nhận nguyên liệu hao hụt do sản phẩm bị lỗi. Tồn kho nguyên liệu sẽ tự động được trừ.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Material Selection */}
-                    <div className="space-y-2">
-                      <Label>Nguyên liệu</Label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input
-                          value={wasteForm.materialId
-                            ? (rawMaterials.find(m => m.id === wasteForm.materialId)?.name || '')
-                            : wasteSearch}
-                          onChange={(e) => {
-                            const val = e.target.value
-                            setWasteForm(prev => ({ ...prev, materialId: '' }))
-                            setWasteSearch(val)
-                          }}
-                          onFocus={() => {
-                            if (wasteForm.materialId) {
-                              setWasteSearch('')
-                              setWasteForm(prev => ({ ...prev, materialId: '' }))
-                            } else if (wasteSearch === '') {
-                              setWasteSearch(' ')
-                            }
-                          }}
-                          placeholder="Tìm hoặc chọn nguyên liệu..."
-                          className="pl-9"
-                        />
-                        {wasteSearch !== '' && (
-                          <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                            {rawMaterials
-                              .filter(m => m.name.toLowerCase().includes(wasteSearch.toLowerCase()) && m.currentStock > 0)
-                              .slice(0, 10)
-                              .map(m => (
-                                <button
-                                  key={m.id}
-                                  onClick={() => {
-                                    setWasteForm(prev => ({ ...prev, materialId: m.id }))
-                                    setWasteSearch('')
-                                  }}
-                                  className="w-full text-left px-3 py-2 hover:bg-mint-light transition-colors flex items-center justify-between text-sm"
-                                >
-                                  <span>{m.name}</span>
-                                  <span className="text-xs text-gray-500">
-                                    Còn {m.currentStock} {m.unit}
-                                    {m.currentStock <= m.minStock && m.minStock > 0 && (
-                                      <span className="text-red-500 ml-1">⚠</span>
-                                    )}
-                                  </span>
-                                </button>
-                              ))
-                            }
-                            {rawMaterials.filter(m => m.name.toLowerCase().includes(wasteSearch.toLowerCase()) && m.currentStock > 0).length === 0 && (
-                              <p className="px-3 py-2 text-sm text-gray-500">Không tìm thấy nguyên liệu</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">Chọn nguyên liệu bị hao hụt</p>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="space-y-2">
-                      <Label htmlFor="waste-quantity">Số lượng hao hụt</Label>
-                      <Input
-                        id="waste-quantity"
-                        type="number"
-                        step="any"
-                        min="0"
-                        value={wasteForm.quantity}
-                        onChange={(e) => setWasteForm(prev => ({ ...prev, quantity: e.target.value }))}
-                      />
-                      {wasteForm.materialId && (
-                        <p className="text-xs text-muted-foreground">
-                          Đơn vị: {rawMaterials.find(m => m.id === wasteForm.materialId)?.unit || ''} |
-                          Đơn giá: {formatPrice(rawMaterials.find(m => m.id === wasteForm.materialId)?.unitPrice || 0)} |
-                          Tồn kho: {rawMaterials.find(m => m.id === wasteForm.materialId)?.currentStock || 0}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Note */}
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="waste-note">Ghi chú</Label>
-                      <Input
-                        id="waste-note"
-                        value={wasteForm.note}
-                        onChange={(e) => setWasteForm(prev => ({ ...prev, note: e.target.value }))}
-                      />
-                      <p className="text-xs text-muted-foreground">Lý do hao hụt: sản phẩm lỗi, gãy vỡ, hỏng...</p>
-                    </div>
-                  </div>
-
-                  {/* Preview & Submit */}
-                  {wasteForm.materialId && wasteForm.quantity && parseFloat(wasteForm.quantity) > 0 && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-red-800">
-                          Chi phí hao hụt: <span className="font-bold">{formatPrice(parseFloat(wasteForm.quantity) * (rawMaterials.find(m => m.id === wasteForm.materialId)?.unitPrice || 0))}</span>
-                        </p>
-                        <p className="text-xs text-red-600 mt-1">
-                          {rawMaterials.find(m => m.id === wasteForm.materialId)?.name || ''} × {parseFloat(wasteForm.quantity)} {rawMaterials.find(m => m.id === wasteForm.materialId)?.unit || ''}
-                        </p>
-                      </div>
-                      <Button
-                        onClick={async () => {
-                          setWasteSaving(true)
-                          try {
-                            const res = await fetch('/api/waste-records', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                materialId: wasteForm.materialId,
-                                quantity: parseFloat(wasteForm.quantity),
-                                note: wasteForm.note,
-                              }),
-                            })
-                            if (res.ok) {
-                              setWasteForm({ materialId: '', quantity: '', note: 'Sản phẩm lỗi' })
-                              fetchAll()
-                            } else {
-                              const err = await res.json()
-                              alert(err.error || 'Lỗi ghi nhận hao hụt')
-                            }
-                          } catch {
-                            alert('Lỗi kết nối')
-                          } finally {
-                            setWasteSaving(false)
-                          }
-                        }}
-                        disabled={wasteSaving}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        {wasteSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
-                        Xác nhận hao hụt
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Waste Records Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <History className="w-5 h-5 text-red-500" />
-                    Lịch sử hao hụt
-                  </CardTitle>
-                  <CardDescription>
-                    Tổng chi phí hao hụt: <span className="font-bold text-red-700">{formatPrice(wasteRecords.reduce((sum, r) => sum + r.totalCost, 0))}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {wasteRecords.length === 0 ? (
-                    <div className="text-center py-10">
-                      <Ban className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-muted-foreground">Chưa có bản ghi hao hụt nào</p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Nguyên liệu</TableHead>
-                            <TableHead className="text-right">Số lượng</TableHead>
-                            <TableHead className="text-right">Đơn giá</TableHead>
-                            <TableHead className="text-right">Chi phí</TableHead>
-                            <TableHead>Ghi chú</TableHead>
-                            <TableHead>Ngày</TableHead>
-                            <TableHead className="text-right">Thao tác</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {wasteRecords.map((record) => (
-                            <TableRow key={record.id}>
-                              <TableCell className="font-medium">{record.material?.name || record.materialId}</TableCell>
-                              <TableCell className="text-right">
-                                {record.quantity} {record.material?.unit || ''}
-                              </TableCell>
-                              <TableCell className="text-right text-sm">{formatPrice(record.unitPrice)}</TableCell>
-                              <TableCell className="text-right font-semibold text-red-700">{formatPrice(record.totalCost)}</TableCell>
-                              <TableCell className="text-sm text-gray-500 max-w-[200px] truncate">{record.note || '-'}</TableCell>
-                              <TableCell className="text-sm text-gray-500">{formatDateShort(record.createdAt)}</TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                                  onClick={async () => {
-                                    if (!confirm('Xóa bản ghi hao hụt này? Tồn kho nguyên liệu sẽ được khôi phục.')) return
-                                    try {
-                                      const res = await fetch(`/api/waste-records?id=${record.id}`, { method: 'DELETE' })
-                                      if (res.ok) fetchAll()
-                                      else alert('Lỗi xóa bản ghi')
-                                    } catch {
-                                      alert('Lỗi kết nối')
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            {activeTab === 'waste' && (
+              <WasteTab
+                rawMaterials={rawMaterials}
+                wasteRecords={wasteRecords}
+                wasteForm={wasteForm}
+                setWasteForm={setWasteForm}
+                wasteSearchInput={wasteSearchInput}
+                setWasteSearchInput={setWasteSearchInput}
+                wasteSearch={wasteSearch}
+                wasteBulkQuantities={wasteBulkQuantities}
+                setWasteBulkQuantities={setWasteBulkQuantities}
+                wasteSaving={wasteSaving}
+                setWasteSaving={setWasteSaving}
+                fetchAll={fetchAll}
+              />
+            )}
           </TabsContent>
 
           {/* ==================== Tab: THỐNG KÊ ==================== */}
           <TabsContent value="analytics">
-            <div className="space-y-6">
-              {/* Database Connection Status */}
-              <Card className={`rounded-xl shadow-sm border ${dbSetupStatus === 'connected' ? 'border-green-300 bg-green-50/50' : dbSetupStatus === 'needs_setup' ? 'border-amber-300 bg-amber-50/50' : 'border-gray-200 bg-white'}`}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Database className="w-5 h-5" />
-                      <span className="font-semibold text-sm">Kết nối database</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {dbSetupStatus === 'connected' && (
-                        <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">
-                          <CheckCircle2 className="w-3 h-3 mr-1" />
-                          Đã kết nối Supabase
-                        </Badge>
-                      )}
-                      {dbSetupStatus === 'needs_setup' && (
-                        <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
-                          Cần cài đặt
-                        </Badge>
-                      )}
-                      {dbSetupStatus === 'not_configured' && (
-                        <Badge className="bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-100">
-                          Chưa cấu hình
-                        </Badge>
-                      )}
-                      {dbSetupStatus === 'loading' && (
-                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                      )}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={checkDbSetup} title="Kiểm tra lại">
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {dbSetupStatus === 'connected' && (
-                    <p className="text-xs text-green-600">
-                      Dữ liệu thống kê đang được lưu trữ trên Supabase cloud an toàn.
-                    </p>
-                  )}
-
-                  {(dbSetupStatus === 'needs_setup' || dbSetupStatus === 'not_configured') && (
-                    <div className="space-y-3">
-                      <p className="text-xs text-muted-foreground">
-                        {dbSetupStatus === 'not_configured'
-                          ? 'Chưa cấu hình Supabase. Hệ thống đang dùng file lưu trữ tạm thời.'
-                          : 'Supabase đã cấu hình nhưng chưa tạo bảng analytics. Hệ thống đang dùng file lưu trữ tạm thời.'}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {dbSetupStatus === 'needs_setup' && (
-                          <Button
-                            size="sm"
-                            onClick={runAutoSetup}
-                            disabled={setupRunning}
-                            className="bg-forest hover:bg-forest-dark text-white"
-                          >
-                            {setupRunning ? (
-                              <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />Đang cài đặt...</>
-                            ) : (
-                              <><Database className="w-3.5 h-3.5 mr-1" />Tự động cài đặt</>
-                            )}
-                          </Button>
-                        )}
-                        {dbSetupSql && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={copySql}
-                            className="border-forest/30 text-forest hover:bg-forest/5"
-                          >
-                            {sqlCopied ? (
-                              <><CheckCircle2 className="w-3.5 h-3.5 mr-1" />Đã copy SQL!</>
-                            ) : (
-                              <><Copy className="w-3.5 h-3.5 mr-1" />Copy SQL</>
-                            )}
-                          </Button>
-                        )}
-                        {dbSetupDashboardUrl && (
-                          <a href={dbSetupDashboardUrl} target="_blank" rel="noopener noreferrer">
-                            <Button size="sm" variant="outline" className="border-forest/30 text-forest hover:bg-forest/5">
-                              <ExternalLink className="w-3.5 h-3.5 mr-1" />
-                              Mở Supabase SQL Editor
-                            </Button>
-                          </a>
-                        )}
-                      </div>
-                      {dbSetupStatus === 'needs_setup' && dbSetupSql && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Hướng dẫn:</p>
-                          <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                            <li>Nhấn "Copy SQL" hoặc "Tự động cài đặt"</li>
-                            <li>Nếu tự động không được, mở Supabase SQL Editor</li>
-                            <li>Dán SQL và nhấn Run</li>
-                            <li>Quay lại đây và nhấn kiểm tra lại</li>
-                          </ol>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Overview Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Tổng truy cập</p>
-                        <p className="text-xl font-bold text-forest-dark">{analyticsData?.overview.totalPageViews ?? 0}</p>
-                      </div>
-                      <Eye className="w-8 h-8 text-forest-light" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Truy cập hôm nay</p>
-                        <p className="text-xl font-bold text-forest-dark">{analyticsData?.overview.todayPageViews ?? 0}</p>
-                      </div>
-                      <TrendingUp className="w-8 h-8 text-forest-light" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Top sản phẩm</p>
-                        <p className="text-sm font-bold text-forest-dark line-clamp-2">{analyticsData?.topProducts?.[0]?.productName || '—'}</p>
-                      </div>
-                      <Star className="w-8 h-8 text-forest-light" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-l-4 border-l-forest bg-white rounded-xl shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Lượt xem SP</p>
-                        <p className="text-xl font-bold text-forest-dark">{analyticsData?.overview.totalProductViews ?? 0}</p>
-                      </div>
-                      <Package className="w-8 h-8 text-forest-light" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Period Selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Khoảng thời gian:</span>
-                <div className="flex gap-1">
-                  {[7, 30, 90].map((d) => (
-                    <button
-                      key={d}
-                      onClick={() => setAnalyticsPeriod(d)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        analyticsPeriod === d
-                          ? 'bg-forest text-white'
-                          : 'bg-mint-light text-forest hover:bg-mint-dark/20'
-                      }`}
-                    >
-                      {d} ngày
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {analyticsLoading && (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-forest" />
-                  <span className="ml-2 text-muted-foreground">Đang tải dữ liệu...</span>
-                </div>
-              )}
-
-              {!analyticsLoading && analyticsData && (
-                <>
-                  {/* Daily Traffic Chart */}
-                  {analyticsData.dailyTraffic.length > 0 && (
-                    <Card className="bg-white rounded-xl shadow-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <BarChart3 className="w-5 h-5 text-forest-light" />
-                          Lưu lượng truy cập hàng ngày
-                        </CardTitle>
-                        <CardDescription>Truy cập trang và xem sản phẩm theo ngày</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <BarChart data={analyticsData.dailyTraffic}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis
-                              dataKey="date"
-                              tick={{ fontSize: 11 }}
-                              tickFormatter={(v: string) => {
-                                const d = new Date(v)
-                                return `${d.getDate()}/${d.getMonth() + 1}`
-                              }}
-                            />
-                            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                            <Tooltip
-                              labelFormatter={(v: string) => {
-                                const d = new Date(v)
-                                return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                              }}
-                              contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                            />
-                            <Bar dataKey="pageViews" name="Truy cập trang" fill="#A7DFC1" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="productViews" name="Xem sản phẩm" fill="#1A6B4F" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Visitor Stats */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-mint-light rounded-xl p-4 border border-mint-dark/20">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Users className="w-4 h-4 text-forest-light" />
-                        <span className="text-xs text-muted-foreground">Khách truy cập ({analyticsPeriod}d)</span>
-                      </div>
-                      <p className="text-lg font-bold text-forest-dark">{analyticsData.overview.uniqueVisitors}</p>
-                    </div>
-                    <div className="bg-mint-light rounded-xl p-4 border border-mint-dark/20">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Users className="w-4 h-4 text-forest-light" />
-                        <span className="text-xs text-muted-foreground">Hôm nay</span>
-                      </div>
-                      <p className="text-lg font-bold text-forest-dark">{analyticsData.overview.todayVisitors}</p>
-                    </div>
-                    <div className="bg-mint-light rounded-xl p-4 border border-mint-dark/20">
-                      <div className="flex items-center gap-2 mb-1">
-                        <SearchCode className="w-4 h-4 text-forest-light" />
-                        <span className="text-xs text-muted-foreground">Tìm kiếm</span>
-                      </div>
-                      <p className="text-lg font-bold text-forest-dark">{analyticsData.overview.totalSearches}</p>
-                    </div>
-                    <div className="bg-mint-light rounded-xl p-4 border border-mint-dark/20">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Eye className="w-4 h-4 text-forest-light" />
-                        <span className="text-xs text-muted-foreground">Xem SP hôm nay</span>
-                      </div>
-                      <p className="text-lg font-bold text-forest-dark">{analyticsData.overview.todayProductViews}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Top Products Table */}
-                    <Card className="bg-white rounded-xl shadow-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Star className="w-4 h-4 text-forest-light" />
-                          Sản phẩm xem nhiều nhất
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {analyticsData.topProducts.length > 0 ? (
-                          <div className="max-h-96 overflow-y-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-8">#</TableHead>
-                                  <TableHead>Tên sản phẩm</TableHead>
-                                  <TableHead className="text-right">Lượt xem</TableHead>
-                                  <TableHead className="text-right w-20">Xu hướng</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {analyticsData.topProducts.slice(0, 10).map((product, idx) => {
-                                  // Simple trend based on position (higher = trending up)
-                                  const isTrendingUp = idx < 3
-                                  return (
-                                    <TableRow key={product.productId}>
-                                      <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
-                                      <TableCell className="font-medium text-forest-dark max-w-[180px] truncate">{product.productName}</TableCell>
-                                      <TableCell className="text-right font-semibold">{product.views}</TableCell>
-                                      <TableCell className="text-right">
-                                        {isTrendingUp ? (
-                                          <ArrowUp className="w-4 h-4 text-forest inline" />
-                                        ) : (
-                                          <ArrowDown className="w-4 h-4 text-gray-400 inline" />
-                                        )}
-                                      </TableCell>
-                                    </TableRow>
-                                  )
-                                })}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground text-center py-8">Chưa có dữ liệu xem sản phẩm</p>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    {/* Search Terms Table */}
-                    <Card className="bg-white rounded-xl shadow-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <SearchCode className="w-4 h-4 text-forest-light" />
-                          Từ khóa tìm kiếm
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {analyticsData.searchTerms.length > 0 ? (
-                          <div className="max-h-96 overflow-y-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-8">#</TableHead>
-                                  <TableHead>Từ khóa</TableHead>
-                                  <TableHead className="text-right">Số lần tìm</TableHead>
-                                  <TableHead className="text-right w-20">Kết quả</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {analyticsData.searchTerms.slice(0, 10).map((term, idx) => (
-                                  <TableRow key={term.query}>
-                                    <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
-                                    <TableCell className="font-medium text-forest-dark">{term.query}</TableCell>
-                                    <TableCell className="text-right font-semibold">{term.count}</TableCell>
-                                    <TableCell className="text-right text-muted-foreground">{term.resultsCount}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground text-center py-8">Chưa có dữ liệu tìm kiếm</p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Recent Activity */}
-                  <Card className="bg-white rounded-xl shadow-sm">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-forest-light" />
-                        Hoạt động gần đây
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {analyticsData.recentActivity.length > 0 ? (
-                        <div className="max-h-96 overflow-y-auto space-y-1">
-                          {analyticsData.recentActivity.map((activity, idx) => {
-                            const timeAgo = getTimeAgo(activity.time)
-                            const icon = activity.type === 'pageview' ? (
-                              <Eye className="w-4 h-4 text-blue-500" />
-                            ) : activity.type === 'productview' ? (
-                              <Package className="w-4 h-4 text-forest" />
-                            ) : (
-                              <SearchCode className="w-4 h-4 text-amber-500" />
-                            )
-                            return (
-                              <div
-                                key={`${activity.type}-${idx}`}
-                                className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-mint-light/50 transition-colors"
-                              >
-                                <div className="flex-shrink-0">{icon}</div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-forest-dark truncate">{activity.detail}</p>
-                                </div>
-                                <span className="text-xs text-muted-foreground flex-shrink-0">{timeAgo}</span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground text-center py-8">Chưa có hoạt động</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-
-              {!analyticsLoading && !analyticsData && (
-                <div className="text-center py-16">
-                  <ChartSpline className="w-16 h-16 text-forest/10 mx-auto mb-4" />
-                  <p className="text-lg text-muted-foreground">Chưa có dữ liệu thống kê</p>
-                  <p className="text-sm text-muted-foreground mt-1">Dữ liệu sẽ được thu thập khi khách hàng truy cập trang chủ</p>
-                </div>
-              )}
-            </div>
+            {activeTab === 'analytics' && (
+              <AnalyticsTab
+                analyticsData={analyticsData}
+                analyticsLoading={analyticsLoading}
+                analyticsPeriod={analyticsPeriod}
+                setAnalyticsPeriod={setAnalyticsPeriod}
+                dbSetupStatus={dbSetupStatus}
+                checkDbSetup={checkDbSetup}
+                runAutoSetup={runAutoSetup}
+                setupRunning={setupRunning}
+                dbSetupSql={dbSetupSql}
+                copySql={copySql}
+                sqlCopied={sqlCopied}
+                dbSetupDashboardUrl={dbSetupDashboardUrl}
+                getTimeAgo={getTimeAgo}
+              />
+            )}
           </TabsContent>
 
           {/* ==================== Tab: CÀI ĐẶT ==================== */}
           <TabsContent value="settings">
-            <div className="max-w-2xl">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Store className="w-5 h-5 text-forest-light" />
-                    Thông tin cửa hàng
-                  </CardTitle>
-                  <CardDescription>
-                    Các thông tin này sẽ hiển thị trên trang chủ shop cho khách hàng xem
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-name" className="flex items-center gap-2">
-                      <Store className="w-4 h-4 text-gray-400" />
-                      Tên cửa hàng
-                    </Label>
-                    <Input
-                      id="shop-name"
-                      value={settingsForm.shopName}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, shopName: e.target.value })}
-                      disabled={settingsSaving}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Hiển thị trên trang chủ, header và footer. VD: Mộc Đậu Decor
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-phone" className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      Số điện thoại
-                    </Label>
-                    <Input
-                      id="shop-phone"
-                      value={settingsForm.phone}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
-                      disabled={settingsSaving}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Hiển thị ở footer. VD: 0912345678
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-zalo" className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-gray-400" />
-                      Số Zalo
-                    </Label>
-                    <Input
-                      id="shop-zalo"
-                      value={settingsForm.zalo}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, zalo: e.target.value })}
-                      disabled={settingsSaving}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Khách click &quot;Liên hệ đặt hàng&quot; sẽ mở chat Zalo. VD: 0912345678
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-address" className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      Địa chỉ
-                    </Label>
-                    <Input
-                      id="shop-address"
-                      value={settingsForm.address}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
-                      disabled={settingsSaving}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Hiển thị trên trang chủ. VD: Số 1, Đường ABC, Quận X
-                    </p>
-                  </div>
-
-                  {shopInfo && (
-                    <div className="bg-gray-50 rounded-xl p-4 border">
-                      <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider font-medium">Xem trước</p>
-                      <div className="space-y-1 text-sm">
-                        <p><span className="text-muted-foreground">Tên shop:</span> <span className="font-medium">{settingsForm.shopName || 'Mộc Đậu Decor'}</span></p>
-                        <p><span className="text-muted-foreground">SĐT:</span> {settingsForm.phone || '—'}</p>
-                        <p><span className="text-muted-foreground">Zalo:</span> {settingsForm.zalo || settingsForm.phone ? (
-                          <a href={`https://zalo.me/${(settingsForm.zalo || settingsForm.phone).replace(/^0/, '')}`} target="_blank" rel="noopener noreferrer" className="text-forest hover:underline ml-1">Mở chat Zalo</a>
-                        ) : <span className="text-amber-600 ml-1">Chưa cấu hình</span>}</p>
-                        <p><span className="text-muted-foreground">Địa chỉ:</span> {settingsForm.address || '—'}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3 pt-2">
-                    <Button onClick={saveSettings} disabled={settingsSaving} className="bg-forest hover:bg-forest-dark">
-                      {settingsSaving ? (
-                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang lưu...</>
-                      ) : (
-                        <><Save className="w-4 h-4 mr-2" /> Lưu thay đổi</>
-                      )}
-                    </Button>
-                    {settingsSaved && (
-                      <span className="flex items-center gap-1 text-forest text-sm">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Đã lưu thành công! Trang chủ sẽ cập nhật ngay.
-                      </span>
-                    )}
-                  </div>
-
-                  {shopInfo?.updatedAt && (
-                    <p className="text-xs text-muted-foreground">
-                      Cập nhật lần cuối: {formatDate(shopInfo.updatedAt)}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            {activeTab === 'settings' && (
+              <SettingsTab
+                settingsForm={settingsForm}
+                setSettingsForm={setSettingsForm}
+                settingsSaving={settingsSaving}
+                settingsSaved={settingsSaved}
+                saveSettings={saveSettings}
+                shopInfo={shopInfo}
+                formatDate={formatDate}
+              />
+            )}
           </TabsContent>
           <TabsContent value="tools">
-            <WatermarkStudio />
+            {activeTab === 'tools' && <WatermarkStudio />}
           </TabsContent>
         </Tabs>
       </div>
