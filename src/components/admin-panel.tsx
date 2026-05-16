@@ -87,6 +87,7 @@ import {
   ExternalLink,
   BookOpen,
   Wrench,
+  TableCellsSplit,
 } from 'lucide-react'
 import {
   BarChart,
