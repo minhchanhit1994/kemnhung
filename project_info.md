@@ -26,7 +26,8 @@ Dự án quản lý cửa hàng Mộc Đậu Studio, bao gồm quản lý kho (n
 - **Task 2:** Xây dựng hệ thống theo dõi sản phẩm và thống kê (Analytics).
 - **Task 3:** Di chuyển hệ thống thống kê sang Supabase với giao diện tự động cài đặt.
 - **Task 4:** Tích hợp công cụ đóng dấu ảnh (Watermark Studio) vào menu Công cụ của Admin Panel.
-- **Task 5:** Nâng cấp Watermark Studio Pro: Thêm bộ lọc chỉnh màu (Brightness, Contrast, Saturation, v.v.) và tính năng so sánh Trước/Sau.
+- **Task 5:** Nâng cấp Watermark Studio Pro: Thêm bộ lọc chỉnh màu và tính năng so sánh Trước/Sau.
+- **Task 6:** Kiểm tra hiệu năng (Stress Test) và nâng cấp giao diện chọn nguyên liệu hàng loạt (Bulk Selection) cho công thức sản phẩm.
 
 ## 🔗 Kết nối GitHub
 - **Repository:** `https://github.com/minhchanhit1994/kemnhung.git`

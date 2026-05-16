@@ -294,6 +294,8 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
   const [recipeMaterials, setRecipeMaterials] = useState<{ materialId: string; quantity: string }[]>([])
   const [newRecipeMaterial, setNewRecipeMaterial] = useState({ materialId: '', quantity: '' })
   const [recipeSearch, setRecipeSearch] = useState('')
+  const [isBulkMode, setIsBulkMode] = useState(false)
+  const [bulkQuantities, setBulkQuantities] = useState<Record<string, string>>({})
 
   const [productionForm, setProductionForm] = useState({ productId: '', quantity: '', notes: '' })
 
@@ -650,6 +652,9 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       setProductMaterials(null)
     }
     setNewRecipeMaterial({ materialId: '', quantity: '' })
+    setRecipeSearch('')
+    setIsBulkMode(false)
+    setBulkQuantities({})
     setProductDialogOpen(true)
   }
 
@@ -2377,30 +2382,43 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
             </div>
 
             {/* === CÔNG THỨC (Recipe) === */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <div className="flex items-center gap-2 mb-3">
-                <Calculator className="w-5 h-5 text-forest" />
-                <h3 className="font-semibold text-sm">CÔNG THỨC</h3>
+            <div className="border rounded-lg p-4 bg-gray-50 space-y-4">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <Calculator className="w-5 h-5 text-forest" />
+                  <h3 className="font-semibold text-sm">CÔNG THỨC</h3>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className={`text-[10px] h-7 gap-1 ${isBulkMode ? 'bg-forest text-white' : ''}`}
+                  onClick={() => setIsBulkMode(!isBulkMode)}
+                >
+                  <TableCellsSplit className="w-3 h-3" />
+                  {isBulkMode ? 'Đóng chọn nhanh' : 'Chọn nhanh từ danh sách'}
+                </Button>
               </div>
 
-              {recipeMaterials.length > 0 && (
-                <div className="space-y-2 mb-3">
+              {/* Selected List - Always visible if items exist */}
+              {recipeMaterials.length > 0 && !isBulkMode && (
+                <div className="space-y-2 mb-3 max-h-48 overflow-y-auto pr-1">
                   {recipeMaterials.map((rm, idx) => {
                     const mat = rawMaterials.find((m) => m.id === rm.materialId)
                     const qty = Number(rm.quantity) || 0
                     const unitPrice = mat?.unitPrice || 0
                     const cost = qty * unitPrice
                     return (
-                      <div key={idx} className="flex items-center gap-2 bg-white rounded-md p-2 text-sm">
+                      <div key={idx} className="flex items-center gap-2 bg-white rounded-md p-2 text-xs border">
                         <span className="font-medium flex-1">{mat?.name || 'NL không xác định'}</span>
                         <span className="text-muted-foreground">&times; {qty} {mat?.unit || ''}</span>
                         <span className="text-muted-foreground">{formatPrice(unitPrice)}</span>
-                        <span className="font-medium w-28 text-right">{formatPrice(cost)}</span>
+                        <span className="font-medium w-24 text-right">{formatPrice(cost)}</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-red-500 hover:text-red-600"
+                          className="h-6 w-6 text-red-500 hover:text-red-600"
                           onClick={() => removeRecipeMaterial(idx)}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -2411,82 +2429,187 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
                 </div>
               )}
 
-              <div className="flex items-end gap-2 mb-3">
-                <div className="flex-1">
-                  <Label className="text-xs">Nguyên liệu</Label>
+              {isBulkMode ? (
+                <div className="space-y-3 animate-in fade-in duration-300">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                     <Input
-                      value={newRecipeMaterial.materialId
-                        ? (rawMaterials.find(m => m.id === newRecipeMaterial.materialId)?.name || '')
-                        : recipeSearch}
-                      onChange={(e) => {
-                        const val = e.target.value
-                        setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
-                        setRecipeSearch(val)
-                      }}
-                      onFocus={() => {
-                        if (newRecipeMaterial.materialId) {
-                          setRecipeSearch('')
-                          setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
-                        } else if (recipeSearch === '') {
-                          setRecipeSearch(' ')
-                        }
-                      }}
-                      placeholder="Tìm nguyên liệu..."
-                      className="h-9 text-sm pl-8"
+                      placeholder="Lọc nguyên liệu..."
+                      className="h-8 text-xs pl-8"
+                      value={recipeSearch}
+                      onChange={(e) => setRecipeSearch(e.target.value)}
                     />
-                    {recipeSearch !== '' && (
-                      <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {rawMaterials
-                          .filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()) && !recipeMaterials.some((rm) => rm.materialId === m.id))
-                          .slice(0, 10)
-                          .map(m => (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => {
-                                setNewRecipeMaterial({ ...newRecipeMaterial, materialId: m.id })
-                                setRecipeSearch('')
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-mint-light transition-colors flex items-center justify-between text-sm"
-                            >
-                              <span>{m.name}</span>
-                              <span className="text-xs text-gray-500">
-                                {formatPrice(m.unitPrice)}/{m.unit}
-                              </span>
-                            </button>
-                          ))
-                        }
-                        {rawMaterials.filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()) && !recipeMaterials.some((rm) => rm.materialId === m.id)).length === 0 && (
-                          <p className="px-3 py-2 text-sm text-gray-500">Không tìm thấy nguyên liệu</p>
+                  </div>
+                  
+                  <div className="bg-white rounded-md border overflow-hidden">
+                    <div className="max-h-60 overflow-y-auto">
+                      <Table>
+                        <TableHeader className="bg-gray-50 sticky top-0 z-10">
+                          <TableRow>
+                            <TableHead className="w-10 text-center"></TableHead>
+                            <TableHead className="text-xs">Nguyên liệu</TableHead>
+                            <TableHead className="text-xs text-right">Giá gốc</TableHead>
+                            <TableHead className="text-xs w-24">Số lượng</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {rawMaterials
+                            .filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()))
+                            .map((m) => {
+                              const isAdded = recipeMaterials.some(rm => rm.materialId === m.id)
+                              return (
+                                <TableRow key={m.id} className={isAdded ? 'bg-mint-light/20' : ''}>
+                                  <TableCell className="p-2 text-center">
+                                    <Checkbox 
+                                      checked={isAdded || !!bulkQuantities[m.id]} 
+                                      disabled={isAdded}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setBulkQuantities(prev => ({ ...prev, [m.id]: '' }))
+                                        } else {
+                                          setBulkQuantities(prev => {
+                                            const next = { ...prev }
+                                            delete next[m.id]
+                                            return next
+                                          })
+                                        }
+                                      }}
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2 text-xs font-medium">
+                                    {m.name}
+                                    <div className="text-[10px] text-muted-foreground">{m.unit}</div>
+                                  </TableCell>
+                                  <TableCell className="p-2 text-xs text-right text-muted-foreground">
+                                    {formatPrice(m.unitPrice)}
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Input
+                                      type="number"
+                                      step="any"
+                                      className="h-7 text-xs px-2"
+                                      placeholder="0"
+                                      disabled={isAdded && !bulkQuantities[m.id]}
+                                      value={isAdded ? (recipeMaterials.find(rm => rm.materialId === m.id)?.quantity || '') : (bulkQuantities[m.id] || '')}
+                                      onChange={(e) => {
+                                        const val = e.target.value
+                                        if (isAdded) {
+                                          // Update existing recipe material quantity
+                                          setRecipeMaterials(prev => prev.map(rm => rm.materialId === m.id ? { ...rm, quantity: val } : rm))
+                                        } else {
+                                          setBulkQuantities(prev => ({ ...prev, [m.id]: val }))
+                                        }
+                                      }}
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {Object.keys(bulkQuantities).length > 0 && (
+                    <Button 
+                      type="button" 
+                      className="w-full bg-forest hover:bg-forest-dark h-8 text-xs gap-2"
+                      onClick={() => {
+                        const newEntries = Object.entries(bulkQuantities)
+                          .filter(([_, qty]) => Number(qty) > 0)
+                          .map(([id, qty]) => ({ materialId: id, quantity: qty }))
+                        
+                        setRecipeMaterials(prev => [...prev, ...newEntries])
+                        setBulkQuantities({})
+                        setIsBulkMode(false)
+                        toast.success(`Đã thêm ${newEntries.length} nguyên liệu`)
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Xác nhận thêm {Object.keys(bulkQuantities).filter(id => Number(bulkQuantities[id]) > 0).length} mục mới
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-end gap-2 mb-3">
+                    <div className="flex-1">
+                      <Label className="text-xs">Nguyên liệu</Label>
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                        <Input
+                          value={newRecipeMaterial.materialId
+                            ? (rawMaterials.find(m => m.id === newRecipeMaterial.materialId)?.name || '')
+                            : recipeSearch}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
+                            setRecipeSearch(val)
+                          }}
+                          onFocus={() => {
+                            if (newRecipeMaterial.materialId) {
+                              setRecipeSearch('')
+                              setNewRecipeMaterial(prev => ({ ...prev, materialId: '' }))
+                            } else if (recipeSearch === '') {
+                              setRecipeSearch(' ')
+                            }
+                          }}
+                          placeholder="Tìm nguyên liệu..."
+                          className="h-9 text-sm pl-8"
+                        />
+                        {recipeSearch !== '' && (
+                          <div className="absolute top-full left-0 right-0 z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {rawMaterials
+                              .filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()) && !recipeMaterials.some((rm) => rm.materialId === m.id))
+                              .slice(0, 10)
+                              .map(m => (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setNewRecipeMaterial({ ...newRecipeMaterial, materialId: m.id })
+                                    setRecipeSearch('')
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-mint-light transition-colors flex items-center justify-between text-sm"
+                                >
+                                  <span>{m.name}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {formatPrice(m.unitPrice)}/{m.unit}
+                                  </span>
+                                </button>
+                              ))
+                            }
+                            {rawMaterials.filter(m => m.name.toLowerCase().includes(recipeSearch.toLowerCase()) && !recipeMaterials.some((rm) => rm.materialId === m.id)).length === 0 && (
+                              <p className="px-3 py-2 text-sm text-gray-500">Không tìm thấy nguyên liệu</p>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
+                    </div>
+                    <div className="w-24">
+                      <Label className="text-xs">Số lượng</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        className="h-9 text-sm"
+                        value={newRecipeMaterial.quantity}
+                        onChange={(e) => setNewRecipeMaterial({ ...newRecipeMaterial, quantity: e.target.value })}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={addRecipeMaterial}
+                      disabled={!newRecipeMaterial.materialId || !newRecipeMaterial.quantity}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Thêm NL
+                    </Button>
                   </div>
-                </div>
-                <div className="w-24">
-                  <Label className="text-xs">Số lượng</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    className="h-9 text-sm"
-                    value={newRecipeMaterial.quantity}
-                    onChange={(e) => setNewRecipeMaterial({ ...newRecipeMaterial, quantity: e.target.value })}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9"
-                  onClick={addRecipeMaterial}
-                  disabled={!newRecipeMaterial.materialId || !newRecipeMaterial.quantity}
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Thêm NL
-                </Button>
-              </div>
+                </>
+              )}
 
               <div className="flex items-center justify-between bg-white rounded-md p-3 border">
                 <span className="font-semibold text-sm">TỔNG GIÁ VỐN</span>
