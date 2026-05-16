@@ -22,6 +22,8 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { Product, ProductionOrder } from '@/lib/types'
 import { formatPrice, formatDateShort } from './utils'
@@ -36,6 +38,7 @@ interface ProductionTabProps {
   deleteProduct: (id: string) => void
   openProductionDialog: (product?: Product) => void
   updateProductionStatus: (id: string, status: string) => void
+  toggleProductVisibility: (product: { id: string; name: string; isActive: boolean }) => void
   reservedStockMap: Record<string, number>
   saving: boolean
 }
@@ -49,6 +52,7 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
   deleteProduct,
   openProductionDialog,
   updateProductionStatus,
+  toggleProductVisibility,
   reservedStockMap,
   saving,
 }) => {
@@ -139,6 +143,15 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={product.isActive ? "text-forest hover:text-forest-dark" : "text-gray-400 hover:text-gray-600"}
+                            onClick={() => toggleProductVisibility(product)}
+                            title={product.isActive ? "Đang hiện - Click để ẩn" : "Đang ẩn - Click để hiện"}
+                          >
+                            {product.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </Button>
                           <Button
                             size="icon"
                             variant="ghost"
