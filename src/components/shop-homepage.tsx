@@ -5,9 +5,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, ShoppingBag, Gem, Video, X, Phone, MessageCircle, Maximize2 } from 'lucide-react'
+import { Search, ShoppingBag, Gem, Video, X, Phone, MessageCircle, Maximize2, Facebook, Music } from 'lucide-react'
 import type { Product, ShopInfo } from '@/lib/types'
 import BlogSection from '@/components/blog-section'
+
+const FANPAGE_URL = 'https://www.facebook.com/profile.php?id=61588946027941'
+const TIKTOK_URL = 'https://www.tiktok.com/@mocdaudecor'
 
 interface ShopHomepageProps {
   onAdminClick: () => void
@@ -165,6 +168,18 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
   const [showZaloPopup, setShowZaloPopup] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  // Secret shortcut for Admin: Shift + Alt + A
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.shiftKey && e.altKey && e.code === 'KeyA') {
+        e.preventDefault()
+        onAdminClick()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onAdminClick])
+
   const handleZaloClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!zaloChatLink) return
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
@@ -286,6 +301,14 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                 Liên hệ đặt hàng
               </span>
             )}
+            <a href={FANPAGE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/20 px-8 py-3 rounded-full transition-colors text-[#1877F2] font-medium">
+              <Facebook className="w-5 h-5" />
+              Fanpage
+            </a>
+            <a href={TIKTOK_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-black/5 hover:bg-black/10 border border-black/10 px-8 py-3 rounded-full transition-colors text-black font-medium">
+              <Music className="w-5 h-5" />
+              TikTok
+            </a>
           </div>
         </div>
       </header>
@@ -422,6 +445,26 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
                     Zalo
                   </a>
                 )}
+                <a
+                  href={FANPAGE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:text-tan transition-colors"
+                  title="Facebook Fanpage"
+                >
+                  <Facebook className="w-4 h-4" />
+                  Fanpage
+                </a>
+                <a
+                  href={TIKTOK_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:text-tan transition-colors"
+                  title="TikTok"
+                >
+                  <Music className="w-4 h-4" />
+                  TikTok
+                </a>
               </div>
             )}
             <p className="text-xs text-forest/50 mt-6">
@@ -434,17 +477,47 @@ export default function ShopHomepage({ onAdminClick }: ShopHomepageProps) {
       {/* === Blog Section === */}
       <BlogSection />
 
-      {/* === Floating Admin Button === */}
-      <button
-        onClick={onAdminClick}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-forest/80 hover:bg-forest text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110 backdrop-blur-sm"
-        title="Đăng nhập quản trị"
-        aria-label="Đăng nhập quản trị"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
-        </svg>
-      </button>
+      {/* === Floating Buttons === */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {/* Zalo Floating Button */}
+        {zaloChatLink && (
+          <a
+            href={zaloChatLink}
+            onClick={handleZaloClick}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-12 h-12 bg-[#0068ff] hover:bg-[#0052cc] text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110"
+            title="Chat Zalo"
+            aria-label="Chat Zalo"
+          >
+            <MessageCircle className="w-6 h-6" />
+          </a>
+        )}
+
+        {/* TikTok Floating Button */}
+        <a
+          href={TIKTOK_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-12 h-12 bg-black hover:bg-gray-800 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110"
+          title="Ghé thăm TikTok"
+          aria-label="Ghé thăm TikTok"
+        >
+          <Music className="w-6 h-6" />
+        </a>
+
+        {/* Facebook Fanpage Floating Button */}
+        <a
+          href={FANPAGE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-12 h-12 bg-[#1877F2] hover:bg-[#1464cc] text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-110"
+          title="Ghé thăm Fanpage"
+          aria-label="Ghé thăm Fanpage"
+        >
+          <Facebook className="w-6 h-6" />
+        </a>
+      </div>
 
       {/* === Product Detail Dialog === */}
       {selectedProduct && (
