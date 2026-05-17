@@ -71,7 +71,7 @@ const ProductionDialog: React.FC<ProductionDialogProps> = ({
               <SelectContent>
                 {products.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.name} (còn: {p.currentStock})
+                    {p.name} (còn: {p.stockQuantity})
                   </SelectItem>
                 ))}
               </SelectContent>

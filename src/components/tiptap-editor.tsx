@@ -82,6 +82,7 @@ export default function TipTapEditor({ content, onChange, placeholder }: TipTapE
       }),
     ],
     content: content || '',
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
       bump()

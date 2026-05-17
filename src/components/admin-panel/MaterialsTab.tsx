@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,52 +22,131 @@ import {
 } from 'lucide-react'
 import { RawMaterial, MaterialTransaction } from '@/lib/types'
 import { formatPrice, formatDate } from './utils'
+import MaterialDialog from './MaterialDialog'
+import ImportDialog from './ImportDialog'
 
 interface MaterialsTabProps {
   rawMaterials: RawMaterial[]
   materialTransactions: MaterialTransaction[]
-  searchInput: string
-  setSearchInput: (val: string) => void
-  openMaterialDialog: (material?: RawMaterial) => void
-  deleteMaterial: (id: string) => void
-  openImportDialog: () => void
-  materialPage: number
-  setMaterialPage: (page: number | ((p: number) => number)) => void
-  materialItemsPerPage: number
-  txPage: number
-  setTxPage: (page: number | ((p: number) => number)) => void
-  txItemsPerPage: number
+  onRefresh: () => void
 }
+
+const MATERIAL_ITEMS_PER_PAGE = 10
+const TX_ITEMS_PER_PAGE = 15
 
 const MaterialsTab: React.FC<MaterialsTabProps> = ({
   rawMaterials,
   materialTransactions,
-  searchInput,
-  setSearchInput,
-  openMaterialDialog,
-  deleteMaterial,
-  openImportDialog,
-  materialPage,
-  setMaterialPage,
-  materialItemsPerPage,
-  txPage,
-  setTxPage,
-  txItemsPerPage,
+  onRefresh,
 }) => {
+  // === Search & Pagination ===
+  const [searchInput, setSearchInput] = useState('')
+  const [materialPage, setMaterialPage] = useState(1)
+  const [txPage, setTxPage] = useState(1)
+
+  // === Material Dialog State ===
+  const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
+  const [editingMaterial, setEditingMaterial] = useState<RawMaterial | null>(null)
+  const [materialForm, setMaterialForm] = useState({ name: '', unit: 'cái', description: '', minStock: '10' })
+  const [saving, setSaving] = useState(false)
+
+  // === Import Dialog State ===
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+
+  // === Handlers ===
+  const openMaterialDialog = (material?: RawMaterial) => {
+    if (material) {
+      setEditingMaterial(material)
+      setMaterialForm({
+        name: material.name,
+        unit: material.unit,
+        description: material.description,
+        minStock: String(material.minStock),
+      })
+    } else {
+      setEditingMaterial(null)
+      setMaterialForm({ name: '', unit: 'cái', description: '', minStock: '10' })
+    }
+    setMaterialDialogOpen(true)
+  }
+
+  const saveMaterial = async () => {
+    try {
+      setSaving(true)
+      const url = editingMaterial ? `/api/raw-materials/${editingMaterial.id}` : '/api/raw-materials'
+      const method = editingMaterial ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...materialForm, minStock: Number(materialForm.minStock) || 0 }),
+      })
+      if (res.ok) {
+        setMaterialDialogOpen(false)
+        onRefresh()
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Lỗi lưu nguyên liệu')
+      }
+    } catch (error) {
+      console.error('Save error:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const deleteMaterial = async (id: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa nguyên liệu này?')) return
+    try {
+      const res = await fetch(`/api/raw-materials/${id}`, { method: 'DELETE' })
+      if (res.ok) onRefresh()
+      else {
+        const err = await res.json()
+        alert(err.error || 'Lỗi xóa nguyên liệu')
+      }
+    } catch (error) {
+      console.error('Delete error:', error)
+    }
+  }
+
+  const openImportDialog = () => {
+    setImportDialogOpen(true)
+  }
+
+  const saveImport = async (items: Array<{ materialId: string; quantity: number; totalPrice: number }>, source: string, notes: string) => {
+    try {
+      setSaving(true)
+      const res = await fetch('/api/material-transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, source, notes }),
+      })
+      if (res.ok) {
+        setImportDialogOpen(false)
+        onRefresh()
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Lỗi nhập kho')
+      }
+    } catch (error) {
+      console.error('Import error:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // === Computed ===
   const filteredMaterials = rawMaterials.filter((m) =>
     m.name.toLowerCase().includes(searchInput.toLowerCase())
   )
-
-  const materialTotalPages = Math.ceil(filteredMaterials.length / materialItemsPerPage)
+  const materialTotalPages = Math.ceil(filteredMaterials.length / MATERIAL_ITEMS_PER_PAGE)
   const currentMaterials = filteredMaterials.slice(
-    (materialPage - 1) * materialItemsPerPage,
-    materialPage * materialItemsPerPage
+    (materialPage - 1) * MATERIAL_ITEMS_PER_PAGE,
+    materialPage * MATERIAL_ITEMS_PER_PAGE
   )
-
-  const txTotalPages = Math.ceil(materialTransactions.length / txItemsPerPage)
+  const txTotalPages = Math.ceil(materialTransactions.length / TX_ITEMS_PER_PAGE)
   const currentTransactions = materialTransactions.slice(
-    (txPage - 1) * txItemsPerPage,
-    txPage * txItemsPerPage
+    (txPage - 1) * TX_ITEMS_PER_PAGE,
+    txPage * TX_ITEMS_PER_PAGE
   )
 
   return (
@@ -90,7 +169,7 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
                   placeholder="Tìm nguyên liệu..."
                   className="pl-9 w-40 sm:w-48"
                   value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
+                  onChange={(e) => { setSearchInput(e.target.value); setMaterialPage(1) }}
                 />
               </div>
               <Button onClick={() => openMaterialDialog()} className="bg-forest hover:bg-forest-dark">
@@ -153,17 +232,10 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
           {materialTotalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 pt-4 border-t">
               <div className="text-sm text-muted-foreground italic">
-                Hiển thị <strong>{(materialPage - 1) * materialItemsPerPage + 1}</strong> - <strong>{Math.min(materialPage * materialItemsPerPage, filteredMaterials.length)}</strong> trong tổng số <strong>{filteredMaterials.length}</strong> nguyên liệu
+                Hiển thị <strong>{(materialPage - 1) * MATERIAL_ITEMS_PER_PAGE + 1}</strong> - <strong>{Math.min(materialPage * MATERIAL_ITEMS_PER_PAGE, filteredMaterials.length)}</strong> trong tổng số <strong>{filteredMaterials.length}</strong> nguyên liệu
               </div>
               <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={materialPage === 1}
-                  onClick={() => setMaterialPage((p) => Math.max(1, p - 1))}
-                >
-                  Trước
-                </Button>
+                <Button variant="outline" size="sm" disabled={materialPage === 1} onClick={() => setMaterialPage((p) => Math.max(1, p - 1))}>Trước</Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, materialTotalPages) }, (_, i) => {
                     let pageNum = i + 1
@@ -184,14 +256,7 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
                     )
                   })}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={materialPage === materialTotalPages}
-                  onClick={() => setMaterialPage((p) => Math.min(materialTotalPages, p + 1))}
-                >
-                  Sau
-                </Button>
+                <Button variant="outline" size="sm" disabled={materialPage === materialTotalPages} onClick={() => setMaterialPage((p) => Math.min(materialTotalPages, p + 1))}>Sau</Button>
               </div>
             </div>
           )}
@@ -240,8 +305,8 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
                       <TableCell className="text-xs">{formatDate(tx.createdAt)}</TableCell>
                       <TableCell className="font-medium text-sm">{tx.material?.name || tx.materialId}</TableCell>
                       <TableCell className="text-right">
-                        <Badge className={(tx.type === 'import' || tx.type === 'in') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                          {(tx.type === 'import' || tx.type === 'in') ? '+' : '-'}{tx.quantity} {tx.material?.unit}
+                        <Badge className={(tx.type === 'import') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                          {(tx.type === 'import') ? '+' : '-'}{tx.quantity} {tx.material?.unit}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
@@ -264,27 +329,32 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
                 Trang {txPage} / {txTotalPages}
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={txPage === 1}
-                  onClick={() => setTxPage((p) => Math.max(1, p - 1))}
-                >
-                  Trước
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={txPage === txTotalPages}
-                  onClick={() => setTxPage((p) => Math.min(txTotalPages, p + 1))}
-                >
-                  Sau
-                </Button>
+                <Button variant="outline" size="sm" disabled={txPage === 1} onClick={() => setTxPage((p) => Math.max(1, p - 1))}>Trước</Button>
+                <Button variant="outline" size="sm" disabled={txPage === txTotalPages} onClick={() => setTxPage((p) => Math.min(txTotalPages, p + 1))}>Sau</Button>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* === Dialogs === */}
+      <MaterialDialog
+        open={materialDialogOpen}
+        onOpenChange={setMaterialDialogOpen}
+        editingMaterial={editingMaterial}
+        materialForm={materialForm}
+        setMaterialForm={setMaterialForm}
+        saveMaterial={saveMaterial}
+        saving={saving}
+      />
+
+      <ImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        rawMaterials={rawMaterials}
+        saveImport={saveImport}
+        saving={saving}
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -31,22 +31,29 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { DashboardStats } from './types'
-import { formatPrice, formatDateShort } from './utils'
-import type { Order, RawMaterial } from '@/lib/types'
+import { formatPrice, formatDateShort, numberToVietnameseWords } from './utils'
+import type { Order, RawMaterial, OrderItem, ShopInfo } from '@/lib/types'
+import OrderDetailDialog from './OrderDetailDialog'
 
 interface DashboardTabProps {
   stats: DashboardStats | null
-  orders: Order[]
+  orders: (Order & { orderItems?: OrderItem[] })[]
   lowStockMaterials: RawMaterial[]
-  viewOrderDetail: (order: Order) => void
+  shopInfo: ShopInfo | null
+  onRefresh: () => void
 }
 
 const DashboardTab: React.FC<DashboardTabProps> = ({
   stats,
   orders,
   lowStockMaterials,
-  viewOrderDetail,
+  shopInfo,
+  onRefresh,
 }) => {
+  const [selectedOrder, setSelectedOrder] = useState<(Order & { orderItems?: OrderItem[] }) | null>(null)
+  const [orderDetailDialogOpen, setOrderDetailDialogOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
   const ORDER_STATUS_COLORS: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
     completed: 'bg-green-100 text-green-800',
@@ -69,6 +76,165 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
     pending: 'Chờ sản xuất',
     completed: 'Hoàn thành',
     cancelled: 'Đã hủy',
+  }
+
+  const viewOrderDetail = (order: Order & { orderItems?: OrderItem[] }) => {
+    setSelectedOrder(order)
+    setOrderDetailDialogOpen(true)
+  }
+
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      setSaving(true)
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (res.ok) {
+        setOrderDetailDialogOpen(false)
+        onRefresh()
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Lỗi cập nhật đơn hàng')
+      }
+    } catch (error) {
+      console.error('Order update error:', error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const printInvoice = (order: Order & { orderItems?: OrderItem[] }) => {
+    const shopName = shopInfo?.shopName || 'Mộc Đậu Decor'
+    const shopPhone = shopInfo?.phone || ''
+    const shopAddress = shopInfo?.address || ''
+    const now = new Date()
+    const invoiceDate = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const invoiceTime = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    const orderDate = new Date(order.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const orderId = order.id.substring(0, 8).toUpperCase()
+    const items = order.orderItems || []
+
+    const orderDateObj = new Date(order.createdAt)
+    const day = String(orderDateObj.getDate()).padStart(2, '0')
+    const month = String(orderDateObj.getMonth() + 1).padStart(2, '0')
+    const year = String(orderDateObj.getFullYear()).substring(2)
+    const dateFormatted = `${day}${month}${year}`
+    const defaultFileName = `MocDau_HD${orderId}_${dateFormatted}`
+
+    const htmlContent = `
+      <style>
+        #print-invoice-container {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          color: #1a1a1a;
+          padding: 20px;
+          background: white;
+        }
+        .invoice { max-width: 350px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; background: white; }
+        .header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 12px; margin-bottom: 12px; }
+        .header h1 { font-size: 18px; color: #059669; margin-bottom: 2px; }
+        .header p { font-size: 11px; color: #666; }
+        .header .shop-info { margin-top: 6px; font-size: 11px; color: #555; }
+        .title-row { text-align: center; margin-bottom: 10px; }
+        .title-row h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; margin-bottom: 10px; border: 1px solid #eee; padding: 8px; border-radius: 4px; }
+        .info-grid .label { color: #888; }
+        .info-grid .value { font-weight: 500; }
+        .customer-info { font-size: 11px; margin-bottom: 10px; border: 1px solid #eee; padding: 8px; border-radius: 4px; }
+        .customer-info .label { color: #888; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+        th { background: #f0fdf4; color: #059669; padding: 6px 4px; text-align: left; font-weight: 600; border-bottom: 1px solid #ddd; font-size: 10px; }
+        td { padding: 5px 4px; border-bottom: 1px dotted #eee; vertical-align: top; }
+        td:last-child { text-align: right; }
+        .total-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; margin-bottom: 10px; }
+        .total-row .total-label { font-size: 12px; font-weight: 600; color: #059669; }
+        .total-row .total-value { font-size: 18px; font-weight: 800; color: #059669; }
+        .amount-words { text-align: center; font-size: 11px; font-style: italic; color: #666; margin-bottom: 10px; padding: 6px; background: #fefce8; border: 1px solid #fef08a; border-radius: 4px; }
+        .footer { text-align: center; font-size: 10px; color: #999; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 10px; }
+        .thank-you { text-align: center; font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 8px; }
+        
+        @media print {
+          body > *:not(#print-invoice-container) {
+            display: none !important;
+          }
+          #print-invoice-container {
+            display: block !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: auto;
+            background: white !important;
+          }
+          .invoice {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
+          }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+        @media screen {
+          #print-invoice-container {
+            display: none !important;
+          }
+        }
+      </style>
+      <div class="invoice">
+        <div class="header">
+          <h1>${shopName}</h1>
+          ${shopAddress ? `<p>${shopAddress}</p>` : ''}
+          ${shopPhone ? `<p>ĐT: ${shopPhone}</p>` : ''}
+        </div>
+        <div class="title-row"><h2>Hóa đơn bán lẻ</h2></div>
+        <div class="info-grid">
+          <div><span class="label">Mã HD: </span><span class="value">${orderId}</span></div>
+          <div><span class="label">Ngày: </span><span class="value">${invoiceDate}</span></div>
+          <div><span class="label">Ngày ĐH: </span><span class="value">${orderDate}</span></div>
+          <div><span class="label">Giờ: </span><span class="value">${invoiceTime}</span></div>
+        </div>
+        <div class="customer-info">
+          <div><span class="label">Khách hàng: </span><strong>${order.customerName || '—'}</strong></div>
+          ${order.customerPhone ? `<div><span class="label">SĐT: </span>${order.customerPhone}</div>` : ''}
+          ${order.customerAddress ? `<div><span class="label">Địa chỉ: </span>${order.customerAddress}</div>` : ''}
+        </div>
+        <table>
+          <thead><tr><th>STT</th><th>Sản phẩm</th><th>SL</th><th>Đơn giá</th><th>TT</th></tr></thead>
+          <tbody>
+            ${items.map((item, i) => `<tr><td>${i + 1}</td><td>${item.productName}</td><td style="text-align:center">${item.quantity}</td><td style="text-align:right">${new Intl.NumberFormat('vi-VN').format(item.unitPrice)}</td><td style="text-align:right">${new Intl.NumberFormat('vi-VN').format(item.unitPrice * item.quantity)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="total-row">
+          <span class="total-label">TỔNG CỘNG:</span>
+          <span class="total-value">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount)}</span>
+        </div>
+        <div class="amount-words">Bằng chữ: ${numberToVietnameseWords(order.totalAmount)}</div>
+        <div class="thank-you">Cảm ơn quý khách đã ủng hộ!</div>
+        <div class="footer">
+          ${shopName} &bull; ${shopPhone || ''}<br>
+          Hóa đơn được tạo lúc ${invoiceTime} ngày ${invoiceDate}
+        </div>
+      </div>
+    `
+
+    const originalTitle = document.title
+    document.title = defaultFileName
+
+    const printDiv = document.createElement('div')
+    printDiv.id = 'print-invoice-container'
+    printDiv.innerHTML = htmlContent
+    document.body.appendChild(printDiv)
+
+    window.print()
+
+    setTimeout(() => {
+      document.body.removeChild(printDiv)
+      document.title = originalTitle
+    }, 1000)
   }
 
   return (
@@ -121,7 +287,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
         </Card>
       </div>
 
-      {/* Financial Chart - Full Width */}
+      {/* Financial Chart */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -224,7 +390,6 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
         </Card>
       </div>
 
-      {/* Low Stock Alert List (Hidden if empty, or keep as a separate notice) */}
       {lowStockMaterials.length > 0 && (
         <Card className="border-amber-200 bg-amber-50/50 hidden lg:block">
           <CardContent className="p-3">
@@ -233,11 +398,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
                 <AlertTriangle className="w-3.5 h-3.5" /> Chú ý:
               </span>
               {lowStockMaterials.map((m) => (
-                <Badge
-                  key={m.id}
-                  variant="outline"
-                  className="text-[10px] bg-white border-amber-200"
-                >
+                <Badge key={m.id} variant="outline" className="text-[10px] bg-white border-amber-200">
                   {m.name}: {m.currentStock} {m.unit}
                 </Badge>
               ))}
@@ -247,7 +408,6 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Orders on Dashboard */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -291,7 +451,6 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
           </CardContent>
         </Card>
 
-        {/* Recent Production Orders */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -333,6 +492,15 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
           </CardContent>
         </Card>
       </div>
+
+      <OrderDetailDialog
+        open={orderDetailDialogOpen}
+        onOpenChange={setOrderDetailDialogOpen}
+        selectedOrder={selectedOrder}
+        printInvoice={printInvoice}
+        updateOrderStatus={updateOrderStatus}
+        saving={saving}
+      />
     </div>
   )
 }

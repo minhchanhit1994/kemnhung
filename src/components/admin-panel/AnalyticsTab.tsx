@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -48,47 +48,92 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { AnalyticsData } from './types'
-import { formatPrice, formatDateShort, getTimeAgo } from './utils'
+import { formatPrice, getTimeAgo } from './utils'
 
-interface AnalyticsTabProps {
-  analyticsData: AnalyticsData | null
-  analyticsLoading: boolean
-  analyticsPeriod: number
-  setAnalyticsPeriod: (period: number) => void
-  dbSetupStatus: string
-  dbSetupSql: string
-  dbSetupDashboardUrl: string
-  setupRunning: boolean
-  runAutoSetup: () => void
-  checkDbSetup: () => void
-}
+const ITEMS_PER_PAGE = 10
 
-const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
-  analyticsData,
-  analyticsLoading,
-  analyticsPeriod,
-  setAnalyticsPeriod,
-  dbSetupStatus,
-  dbSetupSql,
-  dbSetupDashboardUrl,
-  setupRunning,
-  runAutoSetup,
-  checkDbSetup,
-}) => {
+const AnalyticsTab: React.FC = () => {
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [analyticsPeriod, setAnalyticsPeriod] = useState(7)
+  
+  const [dbSetupStatus, setDbSetupStatus] = useState<'loading' | 'connected' | 'needs_setup' | 'not_configured' | 'error'>('loading')
+  const [dbSetupSql, setDbSetupSql] = useState('')
+  const [dbSetupDashboardUrl, setDbSetupDashboardUrl] = useState('')
+  const [setupRunning, setSetupRunning] = useState(false)
+
   const [activityPage, setActivityPage] = useState(1)
   const [activityFilter, setActivityFilter] = useState('all') // all, today, month, year
-  const itemsPerPage = 10
+
+  // === Handlers ===
+  const checkDbSetup = useCallback(async () => {
+    setDbSetupStatus('loading')
+    try {
+      const res = await fetch('/api/analytics/setup')
+      if (res.ok) {
+        const data = await res.json()
+        setDbSetupSql(data.sql || '')
+        setDbSetupDashboardUrl(data.supabaseDashboardUrl || '')
+        if (data.status === 'CONNECTED') setDbSetupStatus('connected')
+        else if (data.status === 'NEEDS_SETUP') setDbSetupStatus('needs_setup')
+        else if (data.status === 'NOT_CONFIGURED') setDbSetupStatus('not_configured')
+        else setDbSetupStatus('error')
+      }
+    } catch {
+      setDbSetupStatus('error')
+    }
+  }, [])
+
+  const runAutoSetup = useCallback(async () => {
+    setSetupRunning(true)
+    try {
+      const res = await fetch('/api/analytics/setup', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) {
+          await checkDbSetup()
+        } else {
+          setDbSetupStatus('needs_setup')
+        }
+      }
+    } catch {
+      setDbSetupStatus('error')
+    } finally {
+      setSetupRunning(false)
+    }
+  }, [checkDbSetup])
+
+  const fetchAnalytics = useCallback(async (period: number) => {
+    setAnalyticsLoading(true)
+    try {
+      const res = await fetch(`/api/analytics/stats?period=${period}`)
+      if (res.ok) {
+        setAnalyticsData(await res.json())
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    checkDbSetup()
+  }, [checkDbSetup])
+
+  useEffect(() => {
+    fetchAnalytics(analyticsPeriod)
+  }, [analyticsPeriod, fetchAnalytics])
 
   const filteredActivities = useMemo(() => {
     if (!analyticsData) return []
     const now = new Date()
     const todayStr = now.toISOString().split('T')[0]
-    const thisMonthStr = todayStr.substring(0, 7) // YYYY-MM
-    const thisYearStr = todayStr.substring(0, 4) // YYYY
+    const thisMonthStr = todayStr.substring(0, 7)
+    const thisYearStr = todayStr.substring(0, 4)
 
     return analyticsData.recentActivity.filter(activity => {
       if (activityFilter === 'all') return true
-      
       const activityDate = new Date(activity.time).toISOString().split('T')[0]
       if (activityFilter === 'today') return activityDate === todayStr
       if (activityFilter === 'month') return activityDate.startsWith(thisMonthStr)
@@ -97,14 +142,14 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
     })
   }, [analyticsData, activityFilter])
 
-  const totalPages = Math.ceil(filteredActivities.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredActivities.length / ITEMS_PER_PAGE)
   const paginatedActivities = useMemo(() => {
-    const start = (activityPage - 1) * itemsPerPage
-    return filteredActivities.slice(start, start + itemsPerPage)
+    const start = (activityPage - 1) * ITEMS_PER_PAGE
+    return filteredActivities.slice(start, start + ITEMS_PER_PAGE)
   }, [filteredActivities, activityPage])
 
   // Reset page when filter changes
-  useMemo(() => {
+  useEffect(() => {
     setActivityPage(1)
   }, [activityFilter])
 
@@ -475,7 +520,7 @@ const AnalyticsTab: React.FC<AnalyticsTabProps> = ({
                   {totalPages > 1 && (
                     <div className="flex items-center justify-between pt-4 border-t mt-4">
                       <p className="text-xs text-muted-foreground">
-                        Hiển thị {((activityPage - 1) * itemsPerPage) + 1} - {Math.min(activityPage * itemsPerPage, filteredActivities.length)} trong số {filteredActivities.length} hoạt động
+                        Hiển thị {((activityPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(activityPage * ITEMS_PER_PAGE, filteredActivities.length)} trong số {filteredActivities.length} hoạt động
                       </p>
                       <div className="flex items-center gap-1">
                         <Button

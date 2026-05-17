@@ -159,7 +159,7 @@ const ProductDialog: React.FC<ProductDialogProps> = ({
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="is-active"
-                  checked={productForm.isActive}
+                  checked={!!productForm.isActive}
                   onCheckedChange={(checked) => setProductForm({ ...productForm, isActive: checked === true })}
                 />
                 <Label htmlFor="is-active">Đang bán</Label>

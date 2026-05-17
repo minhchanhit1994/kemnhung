@@ -28,40 +28,29 @@ import { toast } from 'sonner'
 interface WasteTabProps {
   rawMaterials: RawMaterial[]
   wasteRecords: WasteRecord[]
-  wasteForm: { note: string }
-  setWasteForm: (val: any | ((prev: any) => any)) => void
-  wasteSearchInput: string
-  setWasteSearchInput: (val: string) => void
-  wasteBulkQuantities: Record<string, string>
-  setWasteBulkQuantities: (val: any | ((prev: any) => any)) => void
-  wasteSaving: boolean
-  setWasteSaving: (val: boolean) => void
-  fetchAll: () => void
+  onRefresh: () => void
 }
+
+const ITEMS_PER_PAGE = 10
 
 const WasteTab: React.FC<WasteTabProps> = ({
   rawMaterials,
   wasteRecords,
-  wasteForm,
-  setWasteForm,
-  wasteSearchInput,
-  setWasteSearchInput,
-  wasteBulkQuantities,
-  setWasteBulkQuantities,
-  wasteSaving,
-  setWasteSaving,
-  fetchAll,
+  onRefresh,
 }) => {
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [wasteSearchInput, setWasteSearchInput] = useState('')
+  const [wasteBulkQuantities, setWasteBulkQuantities] = useState<Record<string, string>>({})
+  const [wasteForm, setWasteForm] = useState({ note: 'Sản phẩm lỗi' })
+  const [wasteSaving, setWasteSaving] = useState(false)
 
-  const totalPages = Math.ceil(wasteRecords.length / itemsPerPage)
+  const totalPages = Math.ceil(wasteRecords.length / ITEMS_PER_PAGE)
   const paginatedRecords = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return wasteRecords.slice(start, start + itemsPerPage)
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return wasteRecords.slice(start, start + ITEMS_PER_PAGE)
   }, [wasteRecords, currentPage])
 
-  const wasteSearch = wasteSearchInput // Using simplified search for now as per refactor pattern
+  const wasteSearch = wasteSearchInput
 
   return (
     <div className="space-y-6">
@@ -86,7 +75,7 @@ const WasteTab: React.FC<WasteTabProps> = ({
                 placeholder="VD: Sản phẩm lỗi, gãy vỡ, hỏng..."
                 className="h-9 bg-white"
                 value={wasteForm.note}
-                onChange={(e) => setWasteForm(prev => ({ ...prev, note: e.target.value }))}
+                onChange={(e) => setWasteForm({ note: e.target.value })}
               />
             </div>
 
@@ -168,7 +157,6 @@ const WasteTab: React.FC<WasteTabProps> = ({
                   
                   setWasteSaving(true)
                   try {
-                    // Process each record
                     let successCount = 0
                     for (const [id, qty] of items) {
                       const res = await fetch('/api/waste-records', {
@@ -188,8 +176,8 @@ const WasteTab: React.FC<WasteTabProps> = ({
                       toast.success(`Đã ghi nhận hao hụt ${successCount} nguyên liệu`)
                       setWasteBulkQuantities({})
                       setWasteSearchInput('')
-                      setWasteForm(prev => ({ ...prev, note: 'Sản phẩm lỗi' }))
-                      fetchAll()
+                      setWasteForm({ note: 'Sản phẩm lỗi' })
+                      onRefresh()
                     }
                   } catch {
                     toast.error('Lỗi kết nối máy chủ')
@@ -256,7 +244,7 @@ const WasteTab: React.FC<WasteTabProps> = ({
                             if (!confirm('Xóa bản ghi hao hụt này? Tồn kho nguyên liệu sẽ được khôi phục.')) return
                             try {
                               const res = await fetch(`/api/waste-records?id=${record.id}`, { method: 'DELETE' })
-                              if (res.ok) fetchAll()
+                              if (res.ok) onRefresh()
                               else alert('Lỗi xóa bản ghi')
                             } catch {
                               alert('Lỗi kết nối')
@@ -277,7 +265,7 @@ const WasteTab: React.FC<WasteTabProps> = ({
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t mt-4">
               <p className="text-xs text-muted-foreground">
-                Hiển thị {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, wasteRecords.length)} trong số {wasteRecords.length} bản ghi
+                Hiển thị {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, wasteRecords.length)} trong số {wasteRecords.length} bản ghi
               </p>
               <div className="flex items-center gap-1">
                 <Button

@@ -155,10 +155,10 @@ const OrderDialog: React.FC<OrderDialogProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {products
-                      .filter((p) => p.isActive && p.currentStock > 0)
+                      .filter((p) => p.isActive && p.stockQuantity > 0)
                       .map((p) => {
                         const reserved = reservedStockMap[p.id] || 0
-                        const available = p.currentStock - reserved
+                        const available = p.stockQuantity - reserved
                         return (
                           <SelectItem key={p.id} value={p.id} disabled={available <= 0}>
                             {p.name} - {formatPrice(p.price)} (còn: {available})

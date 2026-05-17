@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,27 +16,59 @@ import { ShopInfo } from '@/lib/types'
 import { formatDate } from './utils'
 
 interface SettingsTabProps {
-  settingsForm: {
-    shopName: string
-    phone: string
-    zalo: string
-    address: string
-  }
-  setSettingsForm: (val: any | ((prev: any) => any)) => void
-  settingsSaving: boolean
-  settingsSaved: boolean
-  saveSettings: () => void
   shopInfo: ShopInfo | null
+  onRefresh: () => void
 }
 
 const SettingsTab: React.FC<SettingsTabProps> = ({
-  settingsForm,
-  setSettingsForm,
-  settingsSaving,
-  settingsSaved,
-  saveSettings,
   shopInfo,
+  onRefresh,
 }) => {
+  const [settingsForm, setSettingsForm] = useState({
+    shopName: 'Mộc Đậu Decor',
+    phone: '',
+    zalo: '',
+    address: '',
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsSaved, setSettingsSaved] = useState(false)
+
+  useEffect(() => {
+    if (shopInfo) {
+      setSettingsForm({
+        shopName: shopInfo.shopName || 'Mộc Đậu Decor',
+        phone: shopInfo.phone || '',
+        zalo: shopInfo.zalo || '',
+        address: shopInfo.address || '',
+      })
+    }
+  }, [shopInfo])
+
+  const saveSettings = async () => {
+    try {
+      setSettingsSaving(true)
+      setSettingsSaved(false)
+      const res = await fetch('/api/shop-info', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settingsForm),
+      })
+      if (res.ok) {
+        setSettingsSaved(true)
+        onRefresh()
+        setTimeout(() => setSettingsSaved(false), 3000)
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Lỗi lưu cài đặt')
+      }
+    } catch (error) {
+      console.error('Settings error:', error)
+      alert('Lỗi lưu cài đặt')
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
+
   return (
     <div className="max-w-2xl">
       <Card>
