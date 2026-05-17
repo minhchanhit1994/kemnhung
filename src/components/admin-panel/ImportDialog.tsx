@@ -59,9 +59,9 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
             <Label>Chọn nguyên liệu</Label>
             <div className="relative">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <Input
-                  placeholder="Gõ để tìm nguyên liệu..."
+                  placeholder="Tìm nhanh nguyên liệu để nhập..."
                   value={importForm.materialId
                     ? rawMaterials.find(m => m.id === importForm.materialId)?.name || ''
                     : importSearch
@@ -73,42 +73,42 @@ const ImportDialog: React.FC<ImportDialogProps> = ({
                   }}
                   onFocus={() => setImportDropdownOpen(true)}
                   onBlur={() => setTimeout(() => setImportDropdownOpen(false), 200)}
-                  className="pl-9 pr-8"
+                  className="h-9 text-xs pl-8 pr-8 bg-white border-forest/20 focus-visible:ring-forest"
                 />
                 {importForm.materialId && (
                   <button
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       setImportForm(prev => ({ ...prev, materialId: '' }))
                       setImportSearch('')
                     }}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
               {importDropdownOpen && !importForm.materialId && (
-                <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md">
+                <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-forest/10 bg-white shadow-md scrollbar-thin scrollbar-thumb-forest/20">
                   {(() => {
                     const q = importSearch.toLowerCase().trim()
                     const filtered = q
                       ? rawMaterials.filter(m => m.name.toLowerCase().includes(q))
                       : rawMaterials
                     if (filtered.length === 0) {
-                      return <div className="p-3 text-sm text-muted-foreground text-center">Không tìm thấy nguyên liệu</div>
+                      return <div className="p-3 text-xs text-muted-foreground text-center">Không tìm thấy nguyên liệu</div>
                     }
                     return filtered.map((m) => (
                       <button
                         key={m.id}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between ${m.currentStock <= m.minStock && m.minStock > 0 ? 'border-l-2 border-l-orange-400' : ''}`}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-mint-light/50 transition-colors flex items-center justify-between ${m.currentStock <= m.minStock && m.minStock > 0 ? 'border-l-2 border-l-orange-400' : ''}`}
                         onMouseDown={(e) => {
                           e.preventDefault()
                           setImportForm(prev => ({ ...prev, materialId: m.id }))
                           setImportDropdownOpen(false)
                         }}
                       >
-                        <span className="font-medium">{m.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2 shrink-0">
+                        <span className="font-medium text-forest-dark">{m.name}</span>
+                        <span className="text-[10px] text-muted-foreground ml-2 shrink-0">
                           {m.currentStock} {m.unit}
                           {m.currentStock <= m.minStock && m.minStock > 0 && <span className="text-orange-500 ml-1">⚠️</span>}
                         </span>
