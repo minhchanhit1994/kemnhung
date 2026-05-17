@@ -30,6 +30,7 @@ interface MaterialsTabProps {
   setSearchInput: (val: string) => void
   openMaterialDialog: (material?: RawMaterial) => void
   deleteMaterial: (id: string) => void
+  openImportDialog: () => void
   materialPage: number
   setMaterialPage: (page: number | ((p: number) => number)) => void
   materialItemsPerPage: number
@@ -45,6 +46,7 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
   setSearchInput,
   openMaterialDialog,
   deleteMaterial,
+  openImportDialog,
   materialPage,
   setMaterialPage,
   materialItemsPerPage,
@@ -199,11 +201,19 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
       {/* Section B: Lịch sử nhập kho */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <History className="w-5 h-5 text-blue-500" />
-            Lịch sử nhập/xuất nguyên liệu
-          </CardTitle>
-          <CardDescription>Danh sách các lần thay đổi số lượng tồn kho</CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <History className="w-5 h-5 text-blue-500" />
+                Lịch sử nhập/xuất nguyên liệu
+              </CardTitle>
+              <CardDescription>Danh sách các lần thay đổi số lượng tồn kho</CardDescription>
+            </div>
+            <Button onClick={openImportDialog} className="bg-forest hover:bg-forest-dark shrink-0">
+              <ArrowDownToLine className="w-4 h-4 mr-1" />
+              Nhập kho
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
