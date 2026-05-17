@@ -240,8 +240,8 @@ const MaterialsTab: React.FC<MaterialsTabProps> = ({
                       <TableCell className="text-xs">{formatDate(tx.createdAt)}</TableCell>
                       <TableCell className="font-medium text-sm">{tx.material?.name || tx.materialId}</TableCell>
                       <TableCell className="text-right">
-                        <Badge className={tx.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                          {tx.type === 'in' ? '+' : '-'}{tx.quantity} {tx.material?.unit}
+                        <Badge className={(tx.type === 'import' || tx.type === 'in') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                          {(tx.type === 'import' || tx.type === 'in') ? '+' : '-'}{tx.quantity} {tx.material?.unit}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">

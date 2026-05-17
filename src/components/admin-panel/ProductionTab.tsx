@@ -12,6 +12,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
   Package,
   Plus,
   Search,
@@ -24,6 +32,7 @@ import {
   XCircle,
   Eye,
   EyeOff,
+  Info,
 } from 'lucide-react'
 import { Product, ProductionOrder } from '@/lib/types'
 import { formatPrice, formatDateShort } from './utils'
@@ -56,9 +65,31 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
   reservedStockMap,
   saving,
 }) => {
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(productSearchInput.toLowerCase())
-  )
+  const [activeSubTab, setActiveSubTab] = React.useState<'selling' | 'hidden'>('selling')
+  const [productPage, setProductPage] = React.useState(1)
+  const [infoProduct, setInfoProduct] = React.useState<Product | null>(null)
+  const productItemsPerPage = 5
+
+  // Reset page when sub-tab or search query changes
+  React.useEffect(() => {
+    setProductPage(1)
+  }, [activeSubTab, productSearchInput])
+
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch = p.name.toLowerCase().includes(productSearchInput.toLowerCase())
+    const matchesTab = activeSubTab === 'selling' ? p.isActive : !p.isActive
+    return matchesSearch && matchesTab
+  })
+
+  // Count active vs hidden for the tab badges
+  const activeCount = products.filter(p => p.isActive).length
+  const hiddenCount = products.filter(p => !p.isActive).length
+
+  const productTotalPages = Math.ceil(filteredProducts.length / productItemsPerPage)
+  const paginatedProducts = React.useMemo(() => {
+    const start = (productPage - 1) * productItemsPerPage
+    return filteredProducts.slice(start, start + productItemsPerPage)
+  }, [filteredProducts, productPage])
 
   return (
     <div className="space-y-6">
@@ -91,6 +122,36 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
           </div>
         </CardHeader>
         <CardContent>
+          {/* Sub-tab Switcher pills */}
+          <div className="flex border-b border-gray-100 pb-3 mb-4 gap-2">
+            <button
+              onClick={() => setActiveSubTab('selling')}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all flex items-center gap-2 ${activeSubTab === 'selling'
+                  ? 'bg-forest text-white shadow-xs'
+                  : 'text-muted-foreground hover:bg-mint-light/20 hover:text-forest'
+                }`}
+            >
+              <span>Đang bán</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeSubTab === 'selling' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                }`}>
+                {activeCount}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveSubTab('hidden')}
+              className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all flex items-center gap-2 ${activeSubTab === 'hidden'
+                  ? 'bg-forest text-white shadow-xs'
+                  : 'text-muted-foreground hover:bg-mint-light/20 hover:text-forest'
+                }`}
+            >
+              <span>Đã ẩn</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeSubTab === 'hidden' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                }`}>
+                {hiddenCount}
+              </span>
+            </button>
+          </div>
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -104,14 +165,18 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.length === 0 ? (
+                {paginatedProducts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {productSearchInput ? 'Không tìm thấy sản phẩm' : 'Chưa có sản phẩm'}
+                      {productSearchInput
+                        ? 'Không tìm thấy sản phẩm'
+                        : activeSubTab === 'hidden'
+                          ? 'Không có sản phẩm nào đang ẩn'
+                          : 'Chưa có sản phẩm'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts.map((product) => (
+                  paginatedProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell>
                         <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden border">
@@ -163,6 +228,15 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
                           >
                             <Hammer className="w-4 h-4" />
                           </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                            onClick={() => setInfoProduct(product)}
+                            title="Xem nhanh nguyên liệu"
+                          >
+                            <Info className="w-4 h-4" />
+                          </Button>
                           <Button size="icon" variant="ghost" onClick={() => openProductDialog(product)}>
                             <Pencil className="w-4 h-4" />
                           </Button>
@@ -182,6 +256,35 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination Controls */}
+          {productTotalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+              <div className="text-xs text-muted-foreground italic">
+                Trang {productPage} / {productTotalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={productPage === 1}
+                  onClick={() => setProductPage((p) => Math.max(1, p - 1))}
+                >
+                  Trước
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={productPage === productTotalPages}
+                  onClick={() => setProductPage((p) => Math.min(productTotalPages, p + 1))}
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -262,6 +365,56 @@ const ProductionTab: React.FC<ProductionTabProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog xem nhanh nguyên liệu thành phẩm */}
+      <Dialog open={!!infoProduct} onOpenChange={(open) => !open && setInfoProduct(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-forest-dark font-semibold">
+              <Info className="w-5 h-5 text-blue-500" />
+              Nguyên liệu: {infoProduct?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Danh sách định lượng các nguyên liệu kẽm nhung & phụ kiện cần để sản xuất ra 1 sản phẩm này.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="my-3 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-forest/20">
+            {!infoProduct?.productMaterials || infoProduct.productMaterials.length === 0 ? (
+              <div className="text-center py-8 text-xs text-muted-foreground border border-dashed rounded-lg bg-gray-50/50">
+                Thành phẩm này chưa được liên kết với bất kỳ nguyên liệu nào.
+              </div>
+            ) : (
+              <div className="border border-forest/10 rounded-lg overflow-hidden bg-white shadow-xs">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 border-b border-forest/10 text-forest-dark font-semibold">
+                    <tr>
+                      <th className="py-2.5 px-3 text-left">Tên nguyên liệu</th>
+                      <th className="py-2.5 px-3 text-right w-24">Số lượng</th>
+                      <th className="py-2.5 px-3 text-right w-20">Đơn vị</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {infoProduct.productMaterials.map((pm, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50/50">
+                        <td className="py-2 px-3 font-medium text-forest-dark">{pm.material?.name || 'Nguyên liệu'}</td>
+                        <td className="py-2 px-3 text-right font-bold text-gray-700">{pm.quantity}</td>
+                        <td className="py-2 px-3 text-right text-muted-foreground">{pm.material?.unit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-end border-t border-forest/10 pt-3">
+            <Button type="button" variant="outline" size="sm" onClick={() => setInfoProduct(null)}>
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

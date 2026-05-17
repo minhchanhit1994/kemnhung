@@ -87,8 +87,8 @@ const OrdersTab: React.FC<OrdersTabProps> = ({
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm đơn hàng..."
-                  className="pl-9 w-40 sm:w-48"
+                  placeholder="Tìm theo tên, SĐT, mã HD..."
+                  className="pl-9 w-40 sm:w-56"
                   value={orderSearchInput}
                   onChange={(e) => setOrderSearchInput(e.target.value)}
                 />
@@ -124,8 +124,13 @@ const OrdersTab: React.FC<OrdersTabProps> = ({
                   paginatedOrders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell>
-                        <div className="font-medium">{order.customerName}</div>
-                        <div className="text-[10px] text-muted-foreground">{order.customerPhone}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-[10px] text-gray-500 bg-gray-50 border border-gray-200 px-1 rounded-sm font-semibold select-all" title="Click đúp để copy">
+                            #{order.id.substring(0, 8).toUpperCase()}
+                          </span>
+                          <span className="font-medium">{order.customerName}</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">{order.customerPhone}</div>
                       </TableCell>
                       <TableCell className="text-right font-semibold text-forest">
                         {formatPrice(order.totalAmount)}

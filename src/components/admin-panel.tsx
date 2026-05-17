@@ -33,7 +33,7 @@ import WatermarkStudio from '@/components/tools/watermark-studio'
 
 // Sub-components
 import { DashboardStats, AnalyticsData } from './admin-panel/types'
-import { formatPrice, formatDate, formatDateShort, getTimeAgo } from './admin-panel/utils'
+import { formatPrice, formatDate, formatDateShort, getTimeAgo, numberToVietnameseWords } from './admin-panel/utils'
 import DashboardTab from './admin-panel/DashboardTab'
 import MaterialsTab from './admin-panel/MaterialsTab'
 import ProductionTab from './admin-panel/ProductionTab'
@@ -839,90 +839,130 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     const orderId = order.id.substring(0, 8).toUpperCase()
     const items = order.orderItems || []
 
-    const html = `<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<title>Hóa đơn bán lẻ - ${orderId}</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1a1a1a; padding: 20px; }
-  .invoice { max-width: 350px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; }
-  .header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 12px; margin-bottom: 12px; }
-  .header h1 { font-size: 18px; color: #059669; margin-bottom: 2px; }
-  .header p { font-size: 11px; color: #666; }
-  .header .shop-info { margin-top: 6px; font-size: 11px; color: #555; }
-  .title-row { text-align: center; margin-bottom: 10px; }
-  .title-row h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; margin-bottom: 10px; border: 1px solid #eee; padding: 8px; border-radius: 4px; }
-  .info-grid .label { color: #888; }
-  .info-grid .value { font-weight: 500; }
-  .customer-info { font-size: 11px; margin-bottom: 10px; border: 1px solid #eee; padding: 8px; border-radius: 4px; }
-  .customer-info .label { color: #888; }
-  table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
-  th { background: #f0fdf4; color: #059669; padding: 6px 4px; text-align: left; font-weight: 600; border-bottom: 1px solid #ddd; font-size: 10px; }
-  td { padding: 5px 4px; border-bottom: 1px dotted #eee; vertical-align: top; }
-  td:last-child { text-align: right; }
-  .total-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; margin-bottom: 10px; }
-  .total-row .total-label { font-size: 12px; font-weight: 600; color: #059669; }
-  .total-row .total-value { font-size: 18px; font-weight: 800; color: #059669; }
-  .amount-words { text-align: center; font-size: 11px; font-style: italic; color: #666; margin-bottom: 10px; padding: 6px; background: #fefce8; border: 1px solid #fef08a; border-radius: 4px; }
-  .footer { text-align: center; font-size: 10px; color: #999; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 10px; }
-  .thank-you { text-align: center; font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 8px; }
-  @media print {
-    body { padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .invoice { border: none; padding: 0; }
-    .no-print { display: none !important; }
-  }
-</style>
-</head>
-<body>
-  <div class="invoice">
-    <div class="header">
-      <h1>${shopName}</h1>
-      ${shopAddress ? `<p>${shopAddress}</p>` : ''}
-      ${shopPhone ? `<p>ĐT: ${shopPhone}</p>` : ''}
-    </div>
-    <div class="title-row"><h2>Hóa đơn bán lẻ</h2></div>
-    <div class="info-grid">
-      <div><span class="label">Mã HD: </span><span class="value">${orderId}</span></div>
-      <div><span class="label">Ngày: </span><span class="value">${invoiceDate}</span></div>
-      <div><span class="label">Ngày ĐH: </span><span class="value">${orderDate}</span></div>
-      <div><span class="label">Giờ: </span><span class="value">${invoiceTime}</span></div>
-    </div>
-    <div class="customer-info">
-      <div><span class="label">Khách hàng: </span><strong>${order.customerName || '—'}</strong></div>
-      ${order.customerPhone ? `<div><span class="label">SĐT: </span>${order.customerPhone}</div>` : ''}
-      ${order.customerAddress ? `<div><span class="label">Địa chỉ: </span>${order.customerAddress}</div>` : ''}
-    </div>
-    <table>
-      <thead><tr><th>STT</th><th>Sản phẩm</th><th>SL</th><th>Đơn giá</th><th>TT</th></tr></thead>
-      <tbody>
-        ${items.map((item, i) => `<tr><td>${i + 1}</td><td>${item.productName}</td><td style="text-align:center">${item.quantity}</td><td style="text-align:right">${new Intl.NumberFormat('vi-VN').format(item.unitPrice)}</td><td style="text-align:right">${new Intl.NumberFormat('vi-VN').format(item.unitPrice * item.quantity)}</td></tr>`).join('')}
-      </tbody>
-    </table>
-    <div class="total-row">
-      <span class="total-label">TỔNG CỘNG:</span>
-      <span class="total-value">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount)}</span>
-    </div>
-    <div class="amount-words">Bằng chữ: ${numberToVietnameseWords(order.totalAmount)}</div>
-    <div class="thank-you">Cảm ơn quý khách đã ủng hộ!</div>
-    <div class="footer">
-      ${shopName} &bull; ${shopPhone || ''}<br>
-      Hóa đơn được tạo lúc ${invoiceTime} ngày ${invoiceDate}
-    </div>
-  </div>
-  <div class="no-print" style="text-align:center;margin-top:16px;">
-    <button onclick="window.print()" style="padding:10px 30px;font-size:14px;background:#059669;color:white;border:none;border-radius:8px;cursor:pointer;">🖨️ In hóa đơn</button>
-  </div>
-</body>
-</html>`
+    const orderDateObj = new Date(order.createdAt)
+    const day = String(orderDateObj.getDate()).padStart(2, '0')
+    const month = String(orderDateObj.getMonth() + 1).padStart(2, '0')
+    const year = String(orderDateObj.getFullYear()).substring(2)
+    const dateFormatted = `${day}${month}${year}`
+    const defaultFileName = `MocDau_HD${orderId}_${dateFormatted}`
 
-    const printWindow = window.open('', '_blank', 'width=400,height=700')
-    if (printWindow) {
-      printWindow.document.write(html)
-      printWindow.document.close()
-    }
+    const htmlContent = `
+      <style>
+        #print-invoice-container {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          color: #1a1a1a;
+          padding: 20px;
+          background: white;
+        }
+        .invoice { max-width: 350px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; background: white; }
+        .header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 12px; margin-bottom: 12px; }
+        .header h1 { font-size: 18px; color: #059669; margin-bottom: 2px; }
+        .header p { font-size: 11px; color: #666; }
+        .header .shop-info { margin-top: 6px; font-size: 11px; color: #555; }
+        .title-row { text-align: center; margin-bottom: 10px; }
+        .title-row h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; margin-bottom: 10px; border: 1px solid #eee; padding: 8px; border-radius: 4px; }
+        .info-grid .label { color: #888; }
+        .info-grid .value { font-weight: 500; }
+        .customer-info { font-size: 11px; margin-bottom: 10px; border: 1px solid #eee; padding: 8px; border-radius: 4px; }
+        .customer-info .label { color: #888; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+        th { background: #f0fdf4; color: #059669; padding: 6px 4px; text-align: left; font-weight: 600; border-bottom: 1px solid #ddd; font-size: 10px; }
+        td { padding: 5px 4px; border-bottom: 1px dotted #eee; vertical-align: top; }
+        td:last-child { text-align: right; }
+        .total-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; margin-bottom: 10px; }
+        .total-row .total-label { font-size: 12px; font-weight: 600; color: #059669; }
+        .total-row .total-value { font-size: 18px; font-weight: 800; color: #059669; }
+        .amount-words { text-align: center; font-size: 11px; font-style: italic; color: #666; margin-bottom: 10px; padding: 6px; background: #fefce8; border: 1px solid #fef08a; border-radius: 4px; }
+        .footer { text-align: center; font-size: 10px; color: #999; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 10px; }
+        .thank-you { text-align: center; font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 8px; }
+        
+        @media print {
+          body > *:not(#print-invoice-container) {
+            display: none !important;
+          }
+          #print-invoice-container {
+            display: block !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: auto;
+            background: white !important;
+          }
+          .invoice {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
+          }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+        @media screen {
+          #print-invoice-container {
+            display: none !important;
+          }
+        }
+      </style>
+      <div class="invoice">
+        <div class="header">
+          <h1>${shopName}</h1>
+          ${shopAddress ? `<p>${shopAddress}</p>` : ''}
+          ${shopPhone ? `<p>ĐT: ${shopPhone}</p>` : ''}
+        </div>
+        <div class="title-row"><h2>Hóa đơn bán lẻ</h2></div>
+        <div class="info-grid">
+          <div><span class="label">Mã HD: </span><span class="value">${orderId}</span></div>
+          <div><span class="label">Ngày: </span><span class="value">${invoiceDate}</span></div>
+          <div><span class="label">Ngày ĐH: </span><span class="value">${orderDate}</span></div>
+          <div><span class="label">Giờ: </span><span class="value">${invoiceTime}</span></div>
+        </div>
+        <div class="customer-info">
+          <div><span class="label">Khách hàng: </span><strong>${order.customerName || '—'}</strong></div>
+          ${order.customerPhone ? `<div><span class="label">SĐT: </span>${order.customerPhone}</div>` : ''}
+          ${order.customerAddress ? `<div><span class="label">Địa chỉ: </span>${order.customerAddress}</div>` : ''}
+        </div>
+        <table>
+          <thead><tr><th>STT</th><th>Sản phẩm</th><th>SL</th><th>Đơn giá</th><th>TT</th></tr></thead>
+          <tbody>
+            ${items.map((item, i) => `<tr><td>${i + 1}</td><td>${item.productName}</td><td style="text-align:center">${item.quantity}</td><td style="text-align:right">${new Intl.NumberFormat('vi-VN').format(item.unitPrice)}</td><td style="text-align:right">${new Intl.NumberFormat('vi-VN').format(item.unitPrice * item.quantity)}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="total-row">
+          <span class="total-label">TỔNG CỘNG:</span>
+          <span class="total-value">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount)}</span>
+        </div>
+        <div class="amount-words">Bằng chữ: ${numberToVietnameseWords(order.totalAmount)}</div>
+        <div class="thank-you">Cảm ơn quý khách đã ủng hộ!</div>
+        <div class="footer">
+          ${shopName} &bull; ${shopPhone || ''}<br>
+          Hóa đơn được tạo lúc ${invoiceTime} ngày ${invoiceDate}
+        </div>
+      </div>
+    `
+
+    // Save original title
+    const originalTitle = document.title
+    // Temporarily set document title to the default filename so the browser uses it when printing
+    document.title = defaultFileName
+
+    // Create a temporary hidden print container
+    const printDiv = document.createElement('div')
+    printDiv.id = 'print-invoice-container'
+    printDiv.innerHTML = htmlContent
+    document.body.appendChild(printDiv)
+
+    // Trigger printing directly on the main tab
+    window.print()
+
+    // Restore title and clean up print container after the print dialog closes
+    setTimeout(() => {
+      document.body.removeChild(printDiv)
+      document.title = originalTitle
+    }, 1000)
   }
 
   // === Settings ===
