@@ -1,5 +1,15 @@
 {
-  "pageViews": [],
+  "pageViews": [
+    {
+      "page": "home",
+      "referrer": "",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+      "ip": "::1",
+      "sessionId": "frksm7",
+      "createdAt": "2026-05-16T08:05:53.088Z",
+      "id": "4fd9d362-bb8b-4892-8866-92a8fac7d688"
+    }
+  ],
   "productViews": [],
   "searchQueries": []
 }

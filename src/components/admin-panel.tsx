@@ -449,18 +449,16 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
     setImportDialogOpen(true)
   }
 
-  const saveImport = async () => {
+  const saveImport = async (items: Array<{ materialId: string; quantity: number; totalPrice: number }>, source: string, notes: string) => {
     try {
       setSaving(true)
       const res = await fetch('/api/material-transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          materialId: importForm.materialId,
-          quantity: Number(importForm.quantity) || 0,
-          totalPrice: Number(importForm.totalPrice) || 0,
-          source: importForm.source,
-          notes: importForm.notes,
+          items,
+          source,
+          notes,
         }),
       })
       if (res.ok) {
@@ -1140,12 +1138,6 @@ export default function AdminPanel({ onBack, onLogout, username, onChangePasswor
       <ImportDialog
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
-        importForm={importForm}
-        setImportForm={setImportForm}
-        importSearch={importSearch}
-        setImportSearch={setImportSearch}
-        importDropdownOpen={importDropdownOpen}
-        setImportDropdownOpen={setImportDropdownOpen}
         rawMaterials={rawMaterials}
         saveImport={saveImport}
         saving={saving}

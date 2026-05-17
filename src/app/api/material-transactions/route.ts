@@ -60,6 +60,76 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const snakeBody = toSnakeCase(body)
 
+    // Check if it is a batch import (Phiếu nhập kho)
+    const items = snakeBody.items || []
+    if (Array.isArray(items) && items.length > 0) {
+      const results = []
+      for (const item of items) {
+        const materialId = String(item.material_id || '')
+        const quantity = parseFloat(String(item.quantity)) || 0
+        const totalPrice = parseFloat(String(item.total_price)) || 0
+
+        if (quantity <= 0) continue
+
+        // 1. Calculate unit price for this import
+        const importUnitPrice = totalPrice / quantity
+
+        // 2. Get current material stock and unit price
+        const { data: material } = await supabase
+          .from('raw_materials')
+          .select('id, current_stock, unit_price')
+          .eq('id', materialId)
+          .single()
+
+        if (!material) continue
+
+        // 3. Calculate new average unit price
+        const oldStock = material.current_stock || 0
+        const oldUnitPrice = material.unit_price || 0
+        const newTotalStock = oldStock + quantity
+        const newAvgUnitPrice = newTotalStock > 0
+          ? ((oldStock * oldUnitPrice) + totalPrice) / newTotalStock
+          : importUnitPrice
+
+        // 4. Update raw_materials
+        const { error: updateError } = await supabase
+          .from('raw_materials')
+          .update({
+            current_stock: newTotalStock,
+            unit_price: newAvgUnitPrice,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', materialId)
+
+        if (updateError) throw updateError
+
+        // 5. Create transaction
+        const id = crypto.randomUUID()
+        const { data: transaction, error: txError } = await supabase
+          .from('material_transactions')
+          .insert({
+            id,
+            material_id: materialId,
+            type: 'import',
+            quantity,
+            unit_price: importUnitPrice,
+            total_price: totalPrice,
+            supplier_id: snakeBody.supplier_id || null,
+            notes: snakeBody.notes || '',
+            source: snakeBody.source || '',
+          })
+          .select()
+          .single()
+
+        if (txError) throw txError
+        if (transaction) {
+          results.push(toCamelCase<MaterialTransaction>(transaction))
+        }
+      }
+      return NextResponse.json(results, { status: 201 })
+    }
+
+    // Fallback to single import
     const materialId = String(snakeBody.material_id || '')
     const quantity = parseFloat(String(snakeBody.quantity)) || 0
     const totalPrice = parseFloat(String(snakeBody.total_price)) || 0
