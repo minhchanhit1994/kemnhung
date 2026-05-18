@@ -94,14 +94,14 @@ const ProductionDialog: React.FC<ProductionDialogProps> = ({
                 <FlaskConical className="w-4 h-4 text-forest" />
                 <span className="text-sm font-semibold">Kiểm tra nguyên liệu</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1.5 scrollbar-thin">
                 {productionStockCheck.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-sm bg-white rounded-md p-2">
+                  <div key={idx} className="flex items-center justify-between text-sm bg-white rounded-md p-2 border border-gray-100">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{item.materialName}</span>
-                      <span className="text-muted-foreground">Cần: {item.needed} {item.unit}</span>
+                      <span className="font-medium text-gray-800">{item.materialName}</span>
+                      <span className="text-muted-foreground text-xs">Cần: {item.needed} {item.unit}</span>
                     </div>
-                    <span className={item.sufficient ? 'text-forest font-medium' : 'text-red-600 font-medium'}>
+                    <span className={item.sufficient ? 'text-forest font-semibold text-xs' : 'text-red-600 font-semibold text-xs'}>
                       Hiện có: {item.available} {item.unit}
                     </span>
                   </div>
